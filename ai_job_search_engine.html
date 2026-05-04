@@ -1,0 +1,541 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0f0d0a;
+    --ink2: #3d3a35;
+    --ink3: #7a756d;
+    --bg: #faf8f4;
+    --surface: #ffffff;
+    --border: rgba(15,13,10,0.10);
+    --accent: #d4522a;
+    --accent2: #1a4f6e;
+    --accent3: #2d7a4f;
+    --tag-bg: #f0ede6;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(15,13,10,0.08);
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+  h1, h2, h3 { font-family: 'DM Serif Display', serif; }
+
+  /* HEADER */
+  .header { background: var(--ink); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { font-family: 'DM Serif Display', serif; color: #faf8f4; font-size: 22px; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.2s; }
+  .nav-tab.active { background: var(--accent); color: white; }
+  .nav-tab:not(.active) { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+  .nav-tab:not(.active):hover { background: rgba(255,255,255,0.18); color: white; }
+
+  /* LAYOUT */
+  .app { display: none; padding: 2rem; max-width: 1100px; margin: 0 auto; }
+  .app.visible { display: block; }
+
+  /* SEEKER VIEW */
+  .seeker-hero { text-align: center; padding: 3rem 0 2rem; }
+  .seeker-hero h1 { font-size: 42px; line-height: 1.15; color: var(--ink); margin-bottom: 0.5rem; }
+  .seeker-hero h1 em { color: var(--accent); font-style: italic; }
+  .seeker-hero p { color: var(--ink3); font-size: 16px; margin-bottom: 2rem; }
+
+  /* AI SEARCH BAR */
+  .search-wrap { position: relative; max-width: 680px; margin: 0 auto 1.5rem; }
+  .search-bar { width: 100%; padding: 16px 56px 16px 20px; border: 2px solid var(--ink); border-radius: var(--radius); font-size: 15px; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); outline: none; transition: border-color 0.2s; }
+  .search-bar:focus { border-color: var(--accent); }
+  .search-bar::placeholder { color: var(--ink3); }
+  .search-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: opacity 0.2s; }
+  .search-btn:hover { opacity: 0.85; }
+  .search-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 2rem; }
+  .chip { padding: 6px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--ink2); cursor: pointer; transition: all 0.15s; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); background: #fef5f0; }
+
+  /* FILTERS ROW */
+  .filters-row { display: flex; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+  .filter-select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); cursor: pointer; outline: none; }
+  .match-toggle { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); }
+  .toggle { width: 36px; height: 20px; background: var(--accent3); border-radius: 10px; position: relative; cursor: pointer; transition: background 0.2s; }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; right: 2px; transition: right 0.2s; }
+
+  /* JOB CARDS */
+  .results-label { font-size: 13px; color: var(--ink3); margin-bottom: 1rem; }
+  .results-label strong { color: var(--ink); }
+  .jobs-grid { display: flex; flex-direction: column; gap: 14px; }
+  .job-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: start; cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow); }
+  .job-card:hover { border-color: rgba(15,13,10,0.2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,13,10,0.1); }
+  .job-card.featured { border-left: 3px solid var(--accent); }
+  .company-logo { width: 46px; height: 46px; border-radius: 10px; background: var(--tag-bg); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 16px; color: var(--ink2); flex-shrink: 0; }
+  .job-info h3 { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .job-company { font-size: 13px; color: var(--ink2); margin-bottom: 6px; }
+  .job-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+  .job-tag { padding: 3px 9px; background: var(--tag-bg); border-radius: 6px; font-size: 11px; color: var(--ink2); font-weight: 500; }
+  .job-tag.remote { background: #e8f5ee; color: #2d7a4f; }
+  .job-tag.urgent { background: #fef0eb; color: var(--accent); }
+  .job-right { text-align: right; flex-shrink: 0; }
+  .job-salary { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .job-posted { font-size: 11px; color: var(--ink3); margin-top: 3px; }
+  .match-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #e8f5ee; color: var(--accent3); border-radius: 20px; font-size: 11px; font-weight: 600; margin-top: 6px; }
+  .match-dot { width: 6px; height: 6px; background: var(--accent3); border-radius: 50%; }
+
+  /* AI INSIGHT BOX */
+  .ai-insight { background: linear-gradient(135deg, #fff8f5 0%, #f0f8ff 100%); border: 1px solid #e8d5cc; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; gap: 12px; align-items: flex-start; }
+  .ai-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .ai-insight p { font-size: 13px; color: var(--ink2); line-height: 1.6; }
+  .ai-insight strong { color: var(--ink); }
+
+  /* RECRUITER VIEW */
+  .recruiter-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; }
+  .recruiter-sidebar { }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+  .post-input { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--ink); background: var(--bg); margin-bottom: 8px; outline: none; }
+  .post-input:focus { border-color: var(--accent2); }
+  .post-textarea { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--ink); background: var(--bg); resize: vertical; min-height: 80px; outline: none; }
+  .post-textarea:focus { border-color: var(--accent2); }
+  .btn-primary { width: 100%; padding: 10px; background: var(--accent2); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.2s; }
+  .btn-primary:hover { opacity: 0.85; }
+  .active-jobs-list { display: flex; flex-direction: column; gap: 8px; }
+  .active-job-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border-radius: 8px; font-size: 13px; }
+  .active-job-item .title { font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .active-job-item .apps { font-size: 11px; color: var(--ink3); }
+  .status-dot { width: 7px; height: 7px; background: var(--accent3); border-radius: 50%; }
+
+  /* CANDIDATES */
+  .candidates-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .candidates-header h2 { font-size: 22px; }
+  .candidates-header p { font-size: 13px; color: var(--ink3); }
+  .ai-match-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; padding: 10px 14px; background: #f0f4ff; border: 1px solid #c8d8f0; border-radius: 10px; font-size: 13px; color: var(--accent2); }
+  .candidate-cards { display: flex; flex-direction: column; gap: 12px; }
+  .candidate-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: start; box-shadow: var(--shadow); transition: all 0.2s; cursor: pointer; }
+  .candidate-card:hover { border-color: rgba(15,13,10,0.2); transform: translateY(-1px); }
+  .avatar { width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 15px; color: white; flex-shrink: 0; }
+  .candidate-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .candidate-title { font-size: 13px; color: var(--ink2); margin-bottom: 6px; }
+  .skills-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .skill-tag { padding: 2px 8px; background: #eef2ff; color: #3452a4; border-radius: 5px; font-size: 11px; font-weight: 500; }
+  .candidate-right { text-align: right; }
+  .c-match { font-size: 20px; font-weight: 700; color: var(--accent3); font-family: 'DM Serif Display', serif; }
+  .c-match-label { font-size: 10px; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .c-exp { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+  .action-btns { display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end; }
+  .btn-sm { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; border: 1px solid var(--border); transition: all 0.15s; }
+  .btn-sm.accept { background: var(--accent3); color: white; border-color: var(--accent3); }
+  .btn-sm.reject { background: transparent; color: var(--ink3); }
+  .btn-sm.accept:hover { opacity: 0.85; }
+  .btn-sm.reject:hover { background: var(--tag-bg); }
+
+  /* RESUME PARSER */
+  .resume-view { max-width: 760px; margin: 0 auto; }
+  .resume-hero { text-align: center; padding: 3rem 0 2rem; }
+  .resume-hero h1 { font-size: 38px; color: var(--ink); margin-bottom: 0.5rem; }
+  .resume-hero p { color: var(--ink3); font-size: 15px; }
+  .upload-zone { border: 2px dashed rgba(15,13,10,0.2); border-radius: var(--radius); padding: 3rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; transition: all 0.2s; background: var(--surface); }
+  .upload-zone:hover { border-color: var(--accent); background: #fff8f5; }
+  .upload-icon { font-size: 36px; margin-bottom: 0.75rem; }
+  .upload-zone p { font-size: 14px; color: var(--ink2); }
+  .upload-zone span { font-size: 12px; color: var(--ink3); display: block; margin-top: 4px; }
+  .btn-upload { display: inline-block; margin-top: 1rem; padding: 10px 24px; background: var(--ink); color: var(--bg); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.2s; }
+  .btn-upload:hover { opacity: 0.8; }
+  .parsed-profile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); }
+  .parsed-header { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+  .parsed-avatar { width: 60px; height: 60px; border-radius: 50%; background: #1a4f6e; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: white; flex-shrink: 0; }
+  .parsed-name { font-size: 20px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+  .parsed-sub { font-size: 13px; color: var(--ink2); }
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .profile-section { }
+  .profile-section h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 0.5rem; font-family: 'DM Sans', sans-serif; }
+  .profile-section ul { list-style: none; padding: 0; }
+  .profile-section ul li { font-size: 13px; color: var(--ink2); padding: 3px 0; padding-left: 12px; position: relative; }
+  .profile-section ul li::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; }
+  .score-row { display: flex; gap: 8px; margin-top: 1rem; }
+  .score-card { flex: 1; background: var(--tag-bg); border-radius: 10px; padding: 0.75rem; text-align: center; }
+  .score-card .val { font-size: 22px; font-weight: 700; font-family: 'DM Serif Display', serif; color: var(--ink); }
+  .score-card .lbl { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+  .recs-section { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+  .recs-section h4 { font-size: 13px; font-weight: 600; margin-bottom: 0.75rem; }
+  .rec-job { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border-radius: 8px; margin-bottom: 8px; }
+  .rec-job-title { font-size: 13px; font-weight: 500; }
+  .rec-job-co { font-size: 11px; color: var(--ink3); }
+  .rec-pct { font-size: 13px; font-weight: 700; color: var(--accent3); }
+
+  /* LOADING SPINNER */
+  .loading { display: flex; align-items: center; gap: 8px; color: var(--ink3); font-size: 13px; padding: 1rem 0; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STREAMING RESULT */
+  .ai-result-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-top: 1rem; font-size: 14px; color: var(--ink2); line-height: 1.7; box-shadow: var(--shadow); white-space: pre-wrap; }
+  .ai-result-box strong { color: var(--ink); }
+
+  /* Stagger animations */
+  .job-card { animation: fadeUp 0.3s ease both; }
+  .job-card:nth-child(1) { animation-delay: 0.05s; }
+  .job-card:nth-child(2) { animation-delay: 0.10s; }
+  .job-card:nth-child(3) { animation-delay: 0.15s; }
+  .job-card:nth-child(4) { animation-delay: 0.20s; }
+  .candidate-card { animation: fadeUp 0.3s ease both; }
+  .candidate-card:nth-child(1) { animation-delay: 0.05s; }
+  .candidate-card:nth-child(2) { animation-delay: 0.10s; }
+  .candidate-card:nth-child(3) { animation-delay: 0.15s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<div class="header">
+  <div class="logo"><span class="logo-dot"></span> Nexus<em style="font-style:italic;font-family:'DM Serif Display',serif;">Hire</em></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('seeker')">Job Seeker</button>
+    <button class="nav-tab" onclick="switchView('recruiter')">Recruiter</button>
+    <button class="nav-tab" onclick="switchView('resume')">Resume AI</button>
+  </div>
+</div>
+
+<!-- JOB SEEKER VIEW -->
+<div class="app visible" id="view-seeker">
+  <div class="seeker-hero">
+    <h1>Find your next role with<br><em>AI-powered</em> matching</h1>
+    <p>Describe what you're looking for — our AI understands context, not just keywords.</p>
+  </div>
+
+  <div class="search-wrap">
+    <input class="search-bar" id="seeker-query" placeholder='e.g. "Senior engineer who wants a startup, remote, $180k+"' onkeydown="if(event.key==='Enter')runSeekerSearch()" />
+    <button class="search-btn" onclick="runSeekerSearch()">Search</button>
+  </div>
+  <div class="search-chips">
+    <div class="chip" onclick="setQuery('Remote senior frontend roles at funded startups')">Remote senior frontend</div>
+    <div class="chip" onclick="setQuery('Product manager fintech NYC hybrid')">PM in fintech NYC</div>
+    <div class="chip" onclick="setQuery('Data scientist with ML focus, flexible hours')">Data scientist ML</div>
+    <div class="chip" onclick="setQuery('Entry level UX designer with mentorship')">Entry UX + mentorship</div>
+  </div>
+
+  <div class="filters-row">
+    <select class="filter-select"><option>All locations</option><option>Remote</option><option>New York</option><option>San Francisco</option><option>Austin</option></select>
+    <select class="filter-select"><option>Any role type</option><option>Full-time</option><option>Contract</option><option>Part-time</option></select>
+    <select class="filter-select"><option>Any salary</option><option>$80k+</option><option>$120k+</option><option>$160k+</option><option>$200k+</option></select>
+    <div class="match-toggle"><span>AI match score</span><div class="toggle"></div></div>
+  </div>
+
+  <div id="seeker-loading" style="display:none"><div class="loading"><div class="spinner"></div>AI is analyzing your query…</div></div>
+
+  <div id="seeker-insight" style="display:none" class="ai-insight">
+    <div class="ai-icon">✦</div>
+    <p id="seeker-insight-text"></p>
+  </div>
+
+  <div id="seeker-results">
+    <div class="results-label">Showing <strong>4 curated matches</strong> for you</div>
+    <div class="jobs-grid" id="jobs-grid"></div>
+  </div>
+</div>
+
+<!-- RECRUITER VIEW -->
+<div class="app" id="view-recruiter">
+  <div class="recruiter-layout">
+    <div class="recruiter-sidebar">
+      <div class="panel">
+        <div class="panel-title">Post a role</div>
+        <input class="post-input" placeholder="Job title" id="r-title" />
+        <input class="post-input" placeholder="Company name" />
+        <input class="post-input" placeholder="Location / Remote" />
+        <input class="post-input" placeholder="Salary range" />
+        <textarea class="post-textarea" placeholder="Describe the role, requirements, culture…" id="r-desc"></textarea>
+        <button class="btn-primary" onclick="runRecruiterMatch()">✦ Find matching candidates</button>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Active postings</div>
+        <div class="active-jobs-list" id="active-jobs-list"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="candidates-header">
+        <div><h2>Top candidates</h2><p id="recruiter-subtext">Post a role to see AI-matched candidates</p></div>
+      </div>
+      <div id="recruiter-loading" style="display:none"><div class="loading"><div class="spinner"></div>Matching candidates with AI…</div></div>
+      <div id="recruiter-insight" style="display:none" class="ai-match-bar">
+        <span>✦</span><span id="recruiter-insight-text"></span>
+      </div>
+      <div class="candidate-cards" id="candidate-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESUME PARSER VIEW -->
+<div class="app" id="view-resume">
+  <div class="resume-view">
+    <div class="resume-hero">
+      <h1>Resume <em style="font-style:italic">Intelligence</em></h1>
+      <p>Upload or paste your resume. Our AI extracts your profile and finds your best-fit roles.</p>
+    </div>
+
+    <div id="resume-upload-area">
+      <div class="upload-zone" onclick="document.getElementById('resume-text-area').style.display='block';this.style.display='none'">
+        <div class="upload-icon">⊕</div>
+        <p>Drop your resume here, or click to paste text</p>
+        <span>PDF, DOCX, or plain text</span>
+        <button class="btn-upload">Paste resume text</button>
+      </div>
+      <div id="resume-text-area" style="display:none">
+        <textarea class="post-textarea" id="resume-input" style="min-height:200px;width:100%;margin-bottom:10px;border:1px solid var(--border);background:var(--surface);" placeholder="Paste your resume text here…&#10;&#10;Example:&#10;Jane Smith | jane@email.com | San Francisco, CA&#10;Senior Software Engineer — 8 years experience&#10;Skills: React, Node.js, Python, AWS, GraphQL&#10;Education: BS Computer Science, Stanford&#10;Worked at: Stripe, Airbnb, early stage startup"></textarea>
+        <button class="btn-primary" style="max-width:200px" onclick="runResumeParser()">✦ Analyze resume</button>
+      </div>
+    </div>
+
+    <div id="resume-loading" style="display:none"><div class="loading"><div class="spinner"></div>Parsing and analyzing your resume…</div></div>
+    <div id="resume-result" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const JOBS = [
+  { title: "Senior Frontend Engineer", company: "Vercel", logo: "V", salary: "$170–200k", tags: ["React", "TypeScript", "Remote"], match: 96, posted: "2d ago", featured: true, urgent: false },
+  { title: "Staff Product Engineer", company: "Linear", logo: "L", salary: "$180–220k", tags: ["React", "Product", "Remote"], match: 91, posted: "4d ago", featured: false, urgent: false },
+  { title: "Senior Full-Stack Engineer", company: "Retool", logo: "R", salary: "$155–185k", tags: ["Node.js", "PostgreSQL", "Hybrid"], match: 87, posted: "1w ago", featured: false, urgent: true },
+  { title: "Frontend Architect", company: "Notion", logo: "N", salary: "$175–210k", tags: ["React", "Perf", "SF Office"], match: 83, posted: "3d ago", featured: false, urgent: false },
+];
+
+const CANDIDATES = [
+  { name: "Alex Rivera", initials: "AR", title: "Senior Full-Stack Engineer · 7 yrs", skills: ["React", "Node.js", "PostgreSQL", "AWS"], match: 94, exp: "7 years", color: "#1a4f6e" },
+  { name: "Priya Nair", initials: "PN", title: "Software Engineer · 5 yrs", skills: ["TypeScript", "React", "GraphQL", "Redis"], match: 89, exp: "5 years", color: "#2d7a4f" },
+  { name: "Jordan Kim", initials: "JK", title: "Full-Stack Developer · 6 yrs", skills: ["Python", "React", "FastAPI", "Kubernetes"], match: 81, exp: "6 years", color: "#8b4a9e" },
+];
+
+const ACTIVE_JOBS = [
+  { title: "Senior Backend Eng.", apps: "18 applicants" },
+  { title: "Product Designer", apps: "7 applicants" },
+];
+
+function renderJobs(jobs) {
+  document.getElementById("jobs-grid").innerHTML = jobs.map(j => `
+    <div class="job-card${j.featured ? ' featured' : ''}">
+      <div class="company-logo">${j.logo}</div>
+      <div class="job-info">
+        <h3>${j.title}</h3>
+        <div class="job-company">${j.company}</div>
+        <div class="job-meta">
+          ${j.tags.map(t => `<span class="job-tag${t==='Remote'?' remote':''}">${t}</span>`).join('')}
+          ${j.urgent ? '<span class="job-tag urgent">Hiring fast</span>' : ''}
+        </div>
+      </div>
+      <div class="job-right">
+        <div class="job-salary">${j.salary}</div>
+        <div class="job-posted">${j.posted}</div>
+        <div class="match-badge"><span class="match-dot"></span>${j.match}% match</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderCandidates(candidates) {
+  document.getElementById("candidate-cards").innerHTML = candidates.map(c => `
+    <div class="candidate-card">
+      <div class="avatar" style="background:${c.color}">${c.initials}</div>
+      <div>
+        <div class="candidate-name">${c.name}</div>
+        <div class="candidate-title">${c.title}</div>
+        <div class="skills-row">${c.skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
+      </div>
+      <div class="candidate-right">
+        <div class="c-match">${c.match}%</div>
+        <div class="c-match-label">AI match</div>
+        <div class="c-exp">${c.exp} exp.</div>
+        <div class="action-btns">
+          <button class="btn-sm reject">Pass</button>
+          <button class="btn-sm accept">Invite</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderActiveJobs() {
+  document.getElementById("active-jobs-list").innerHTML = ACTIVE_JOBS.map(j => `
+    <div class="active-job-item">
+      <div><div class="title">${j.title}</div><div class="apps">${j.apps}</div></div>
+      <div class="status-dot"></div>
+    </div>`).join('');
+}
+
+renderJobs(JOBS);
+renderActiveJobs();
+
+function setQuery(q) {
+  document.getElementById("seeker-query").value = q;
+  runSeekerSearch();
+}
+
+async function runSeekerSearch() {
+  const q = document.getElementById("seeker-query").value.trim();
+  if (!q) return;
+  document.getElementById("seeker-loading").style.display = "block";
+  document.getElementById("seeker-insight").style.display = "none";
+  document.getElementById("seeker-results").style.display = "none";
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: `You are the AI engine of NexusHire, a job search platform. Given a user's natural language job search query, respond with a JSON object only (no markdown, no explanation) with this structure:
+{
+  "insight": "1–2 sentence analysis of what the user is looking for and what their strongest angles are",
+  "jobs": [
+    { "title": "...", "company": "...", "logo": "1 letter", "salary": "$X–Yk", "tags": ["tag1","tag2","tag3"], "match": 85, "posted": "Xd ago", "featured": false, "urgent": false }
+  ]
+}
+Generate 4 realistic, varied job listings that closely match the query. Match scores should be 78–97. Be creative with companies (mix known and plausible startups). Only output raw JSON.`,
+        messages: [{ role: "user", content: q }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.find(b => b.type === "text")?.text || "{}";
+    const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+    document.getElementById("seeker-insight-text").innerHTML = parsed.insight || "";
+    document.getElementById("seeker-insight").style.display = "flex";
+    document.getElementById("seeker-results").style.display = "block";
+    document.querySelector("#seeker-results .results-label").innerHTML = `Showing <strong>${(parsed.jobs||[]).length} AI-matched roles</strong> for your query`;
+    renderJobs(parsed.jobs || JOBS);
+  } catch(e) {
+    document.getElementById("seeker-insight-text").innerHTML = "Showing curated results for your search. Refine your query for better matches.";
+    document.getElementById("seeker-insight").style.display = "flex";
+    document.getElementById("seeker-results").style.display = "block";
+    renderJobs(JOBS);
+  }
+  document.getElementById("seeker-loading").style.display = "none";
+}
+
+async function runRecruiterMatch() {
+  const title = document.getElementById("r-title").value.trim();
+  const desc = document.getElementById("r-desc").value.trim();
+  if (!title && !desc) return;
+  document.getElementById("recruiter-loading").style.display = "block";
+  document.getElementById("recruiter-insight").style.display = "none";
+  document.getElementById("candidate-cards").innerHTML = "";
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: `You are the AI matching engine of NexusHire. Given a job posting, generate realistic matching candidates as JSON only:
+{
+  "insight": "1 sentence about what profile you're prioritizing and why",
+  "candidates": [
+    { "name": "Full Name", "initials": "XX", "title": "Role · X yrs", "skills": ["s1","s2","s3","s4"], "match": 88, "exp": "X years", "color": "#hex" }
+  ]
+}
+Generate 3 diverse, realistic candidates. Match scores 75–96. Use different colors: #1a4f6e, #2d7a4f, #8b4a9e, #c4522a, #7a5e1a. Only output raw JSON.`,
+        messages: [{ role: "user", content: `Job title: ${title}\nDescription: ${desc}` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content.find(b => b.type === "text")?.text || "{}";
+    const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+    document.getElementById("recruiter-insight-text").textContent = parsed.insight || "AI matched candidates ranked by profile alignment.";
+    document.getElementById("recruiter-insight").style.display = "flex";
+    document.getElementById("recruiter-subtext").textContent = `${(parsed.candidates||[]).length} candidates matched for "${title}"`;
+    if (title) ACTIVE_JOBS.unshift({ title, apps: "0 applicants (new)" });
+    renderActiveJobs();
+    renderCandidates(parsed.candidates || CANDIDATES);
+  } catch(e) {
+    document.getElementById("recruiter-insight-text").textContent = "Showing top candidate matches based on role requirements.";
+    document.getElementById("recruiter-insight").style.display = "flex";
+    renderCandidates(CANDIDATES);
+  }
+  document.getElementById("recruiter-loading").style.display = "none";
+}
+
+async function runResumeParser() {
+  const text = document.getElementById("resume-input").value.trim();
+  if (!text) return;
+  document.getElementById("resume-loading").style.display = "block";
+  document.getElementById("resume-result").style.display = "none";
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1200,
+        system: `You are the resume parsing AI of NexusHire. Extract a profile and generate role matches from the resume text. Return ONLY raw JSON:
+{
+  "name": "...",
+  "initials": "XX",
+  "title": "inferred job title",
+  "location": "...",
+  "skills": ["skill1","skill2","skill3","skill4","skill5"],
+  "experience": ["bullet 1","bullet 2","bullet 3"],
+  "education": ["degree · school"],
+  "strength_score": 82,
+  "readability_score": 78,
+  "ats_score": 85,
+  "recommended_jobs": [
+    { "title": "...", "company": "...", "match": 91 },
+    { "title": "...", "company": "...", "match": 86 },
+    { "title": "...", "company": "...", "match": 79 }
+  ]
+}
+Only output raw JSON. Make scores realistic. Generate real-sounding company names.`,
+        messages: [{ role: "user", content: text }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content.find(b => b.type === "text")?.text || "{}";
+    const p = JSON.parse(raw.replace(/```json|```/g, "").trim());
+    document.getElementById("resume-result").innerHTML = `
+      <div class="parsed-profile">
+        <div class="parsed-header">
+          <div class="parsed-avatar">${p.initials || "?"}</div>
+          <div>
+            <div class="parsed-name">${p.name || "Your Profile"}</div>
+            <div class="parsed-sub">${p.title || ""} · ${p.location || ""}</div>
+          </div>
+        </div>
+        <div class="profile-grid">
+          <div class="profile-section">
+            <h4>Top skills</h4>
+            <ul>${(p.skills||[]).map(s=>`<li>${s}</li>`).join('')}</ul>
+          </div>
+          <div class="profile-section">
+            <h4>Education</h4>
+            <ul>${(p.education||[]).map(e=>`<li>${e}</li>`).join('')}</ul>
+            <h4 style="margin-top:0.75rem">Experience highlights</h4>
+            <ul>${(p.experience||[]).map(e=>`<li>${e}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <div class="score-row">
+          <div class="score-card"><div class="val">${p.strength_score||0}</div><div class="lbl">Profile strength</div></div>
+          <div class="score-card"><div class="val">${p.readability_score||0}</div><div class="lbl">Readability</div></div>
+          <div class="score-card"><div class="val">${p.ats_score||0}</div><div class="lbl">ATS score</div></div>
+        </div>
+        <div class="recs-section">
+          <h4>✦ AI-recommended roles for you</h4>
+          ${(p.recommended_jobs||[]).map(j=>`
+            <div class="rec-job">
+              <div><div class="rec-job-title">${j.title}</div><div class="rec-job-co">${j.company}</div></div>
+              <div class="rec-pct">${j.match}% match</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    document.getElementById("resume-result").style.display = "block";
+  } catch(e) {
+    document.getElementById("resume-result").innerHTML = `<div class="ai-result-box">Could not parse resume. Please check your input and try again.</div>`;
+    document.getElementById("resume-result").style.display = "block";
+  }
+  document.getElementById("resume-loading").style.display = "none";
+}
+
+function switchView(v) {
+  document.querySelectorAll('.app').forEach(el => el.classList.remove('visible'));
+  document.getElementById('view-' + v).classList.add('visible');
+  document.querySelectorAll('.nav-tab').forEach((el, i) => {
+    el.classList.toggle('active', ['seeker','recruiter','resume'][i] === v);
+  });
+}
+</script>
