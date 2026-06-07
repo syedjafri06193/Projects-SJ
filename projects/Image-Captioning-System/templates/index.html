@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Captioning System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="app">
+
+    <header class="header">
+      <div class="header-left">
+        <h1>Image Captioning System</h1>
+        <p>CNN + LSTM end-to-end architecture &middot; COCO dataset &middot; BLEU-4: 31.2</p>
+      </div>
+      <div class="tech-badges">
+        <span class="badge badge-python">Python</span>
+        <span class="badge badge-tf">TensorFlow</span>
+        <span class="badge badge-cv">OpenCV</span>
+      </div>
+    </header>
+
+    <!-- Pipeline Visualization -->
+    <section class="pipeline-section" aria-label="Processing pipeline">
+      <div class="pipeline-title">Processing Pipeline</div>
+      <div class="pipeline-steps">
+        <div class="pipe-step" id="step-load">
+          <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <div class="step-name">Load Image</div>
+        </div>
+        <div class="pipe-step" id="step-preprocess">
+          <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v3M12 18v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M3 12h3M18 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+          <div class="step-name">Preprocess</div>
+        </div>
+        <div class="pipe-step" id="step-cnn">
+          <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8"/><line x1="12" y1="4" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="20"/><line x1="4" y1="12" x2="2" y2="12"/><line x1="22" y1="12" x2="20" y2="12"/></svg>
+          <div class="step-name">CNN Extract</div>
+        </div>
+        <div class="pipe-step" id="step-lstm">
+          <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9.5 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM14.5 17a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5z"/><path d="M9.5 7v4a5 5 0 0 0 5 5"/></svg>
+          <div class="step-name">LSTM Decode</div>
+        </div>
+        <div class="pipe-step" id="step-beam">
+          <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <div class="step-name">Beam Search</div>
+        </div>
+        <div class="pipe-step" id="step-output">
+          <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <div class="step-name">Output</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+
+      <!-- Input Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Input Image</span>
+        </div>
+        <div class="panel-body">
+          <input type="file" id="file-input" accept="image/*" aria-label="Upload image">
+          <div class="upload-zone" id="upload-zone" role="button" tabindex="0"
+               aria-label="Drop image or click to upload"
+               onclick="document.getElementById('file-input').click()"
+               onkeydown="if(event.key==='Enter')this.click()">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            <strong>Drop image or click to upload</strong>
+            <p>JPEG, PNG, WebP &middot; max 10MB</p>
+          </div>
+          <img id="preview-img" class="preview-img" alt="Preview">
+          <div class="image-meta" id="image-meta">
+            <span class="meta-chip" id="meta-size">—</span>
+            <span class="meta-chip" id="meta-type">—</span>
+            <span class="meta-chip">Resize → 224×224</span>
+            <span class="meta-chip">Normalize [0,1]</span>
+          </div>
+          <button class="btn-generate" id="btn-generate" disabled onclick="runCaption()" aria-label="Generate caption">
+            <div class="spinner" id="spinner" aria-hidden="true"></div>
+            <svg id="btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Generate Caption
+          </button>
+        </div>
+      </div>
+
+      <!-- Output Panel -->
+      <div class="panel">
+        <div class="panel-header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Caption Output</span>
+        </div>
+        <div class="panel-body output-area">
+          <div id="empty-state" class="empty-state">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <p>Upload an image to generate a caption</p>
+          </div>
+
+          <div class="caption-result" id="caption-result">
+            <div class="caption-label">Primary Caption (Beam Search k=3)</div>
+            <div class="caption-text" id="caption-text"></div>
+            <div class="confidence-bar-wrap">
+              <span class="conf-label">Confidence</span>
+              <div class="conf-track" role="progressbar" aria-label="Confidence">
+                <div class="conf-fill" id="conf-fill"></div>
+              </div>
+              <span class="conf-pct" id="conf-pct">—</span>
+            </div>
+          </div>
+
+          <div id="alt-section" style="display:none">
+            <div class="section-label">Alternative Captions</div>
+            <div class="alt-captions" id="alt-captions"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="panel" style="margin-bottom:1.5rem">
+      <div class="panel-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span>Runtime Logs</span>
+      </div>
+      <div class="panel-body" style="padding:10px 12px">
+        <div class="logs-area" id="logs" role="log" aria-live="polite" aria-label="Runtime logs">
+          <span class="log-line"><span class="ts">[00:00:00]</span> <span class="linfo">INFO </span> System initialized &middot; TensorFlow 2.13.0 &middot; OpenCV 4.8.0</span>
+          <span class="log-line"><span class="ts">[00:00:00]</span> <span class="linfo">INFO </span> CNN backbone: InceptionV3 (pretrained ImageNet)</span>
+          <span class="log-line"><span class="ts">[00:00:00]</span> <span class="linfo">INFO </span> LSTM decoder: 512 units &middot; Embedding dim: 256</span>
+          <span class="log-line"><span class="ts">[00:00:00]</span> <span class="linfo">INFO </span> Vocabulary: 8,256 tokens &middot; COCO 2017 train</span>
+          <span class="log-line"><span class="ts">[00:00:00]</span> <span class="linfo">INFO </span> Ready. Upload an image to begin.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-row" role="region" aria-label="Model metrics">
+      <div class="metric-card">
+        <div class="metric-val">31.2</div>
+        <div class="metric-lbl">BLEU-4 Score</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" id="inf-time">—</div>
+        <div class="metric-lbl">Inference Time</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" id="token-count">—</div>
+        <div class="metric-lbl">Tokens Generated</div>
+      </div>
+    </div>
+
+  </div><!-- /app -->
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

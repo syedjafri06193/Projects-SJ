@@ -1,0 +1,13 @@
+# Motor GPIO Pins
+MOTOR_FL = 17
+MOTOR_FR = 18
+MOTOR_BL = 27
+MOTOR_BR = 22
+
+# Camera Resolution
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+
+# Object Tracking Settings
+TRACK_COLOR_LOWER = (29, 86, 6)
+TRACK_COLOR_UPPER = (64, 255, 255)

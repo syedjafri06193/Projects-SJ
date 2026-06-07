@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sentiment Analysis API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital@0;1&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">◈</span>
+        <span class="logo-text">SentimentAPI</span>
+      </div>
+      <nav class="header-nav">
+        <a href="#demo">Demo</a>
+        <a href="#docs">Docs</a>
+        <span class="badge-version">v1.0</span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-tag">NLP · Python · Flask · NLTK · Hugging Face</div>
+      <h1 class="hero-title">Sentiment<br /><em>Analysis API</em></h1>
+      <p class="hero-sub">RESTful sentiment scoring powered by VADER lexicons and a pre-trained DistilBERT transformer. Real-time, cloud-deployed, ready to integrate.</p>
+      <div class="hero-pills">
+        <span class="pill">VADER</span>
+        <span class="divider">+</span>
+        <span class="pill">DistilBERT SST-2</span>
+        <span class="divider">+</span>
+        <span class="pill">Batch Endpoint</span>
+      </div>
+    </section>
+
+    <!-- Live Demo -->
+    <section id="demo" class="demo-section">
+      <div class="demo-card">
+        <div class="demo-header">
+          <h2>Live Demo</h2>
+          <div class="model-toggle">
+            <button class="toggle-btn active" data-model="vader">VADER</button>
+            <button class="toggle-btn" data-model="hf">DistilBERT</button>
+          </div>
+        </div>
+
+        <textarea id="inputText" placeholder="Type something to analyze…" rows="4">I absolutely love this API — it works flawlessly and the docs are fantastic!</textarea>
+
+        <div class="example-chips">
+          <span class="chip" data-text="I absolutely love this — it's fantastic!">😊 Positive</span>
+          <span class="chip" data-text="This is the worst experience I've ever had.">😠 Negative</span>
+          <span class="chip" data-text="The package arrived on Tuesday.">😐 Neutral</span>
+          <span class="chip" data-text="It's okay I guess, not great but not terrible either.">🤔 Mixed</span>
+        </div>
+
+        <button id="analyzeBtn" class="analyze-btn">
+          <span class="btn-label">Analyze</span>
+          <span class="btn-arrow">→</span>
+        </button>
+
+        <!-- Result -->
+        <div id="result" class="result hidden">
+          <div class="result-top">
+            <div class="result-label" id="resultLabel"></div>
+            <div class="result-score" id="resultScore"></div>
+          </div>
+          <div class="score-bar-wrap">
+            <div class="score-bar-track">
+              <div class="score-bar-fill" id="scoreFill"></div>
+            </div>
+            <div class="score-labels">
+              <span>Negative</span>
+              <span>Neutral</span>
+              <span>Positive</span>
+            </div>
+          </div>
+          <div class="breakdown" id="breakdown"></div>
+          <div class="result-meta" id="resultMeta"></div>
+        </div>
+
+        <div id="errorBox" class="error-box hidden"></div>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats-section">
+      <div class="stat-card">
+        <div class="stat-num">2</div>
+        <div class="stat-label">Analysis backends</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">100</div>
+        <div class="stat-label">Texts per batch</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">5k</div>
+        <div class="stat-label">Chars max / request</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num">3</div>
+        <div class="stat-label">REST endpoints</div>
+      </div>
+    </section>
+
+    <!-- Docs -->
+    <section id="docs" class="docs-section">
+      <h2 class="docs-title">API Reference</h2>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <code class="route">/api/analyze</code>
+          <span class="endpoint-desc">VADER sentiment</span>
+        </div>
+        <pre class="code-block"><span class="dim"># Request</span>
+curl -X POST https://your-host/api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"text": "This product is incredible!"}'
+
+<span class="dim"># Response</span>
+{
+  "label":    "POSITIVE",
+  "score":     0.8316,
+  "compound":  0.8316,
+  "positive":  0.625,
+  "neutral":   0.375,
+  "negative":  0.0,
+  "backend":  "nltk-vader",
+  "input_length": 27
+}</pre>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <code class="route">/api/analyze/hf</code>
+          <span class="endpoint-desc">DistilBERT sentiment</span>
+        </div>
+        <pre class="code-block"><span class="dim"># Request (same shape)</span>
+curl -X POST https://your-host/api/analyze/hf \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Absolutely terrible experience."}'
+
+<span class="dim"># Response</span>
+{
+  "label":    "NEGATIVE",
+  "score":     0.9987,
+  "compound": -0.9987,
+  "backend":  "huggingface-distilbert",
+  "input_length": 31
+}</pre>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method post">POST</span>
+          <code class="route">/api/analyze/batch</code>
+          <span class="endpoint-desc">Batch (up to 100 texts)</span>
+        </div>
+        <pre class="code-block"><span class="dim"># Request</span>
+curl -X POST https://your-host/api/analyze/batch \
+  -H "Content-Type: application/json" \
+  -d '{"texts": ["Love it!", "Hate it.", "Meh."]}'
+
+<span class="dim"># Response</span>
+{
+  "count": 3,
+  "results": [
+    {"label": "POSITIVE", "score": 0.6696, ...},
+    {"label": "NEGATIVE", "score": 0.5719, ...},
+    {"label": "NEUTRAL",  "score": 0.0,    ...}
+  ]
+}</pre>
+      </div>
+
+      <div class="endpoint-card">
+        <div class="endpoint-header">
+          <span class="method get">GET</span>
+          <code class="route">/api/health</code>
+          <span class="endpoint-desc">Health check</span>
+        </div>
+        <pre class="code-block">{"status": "ok", "version": "1.0.0"}</pre>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Built with Python · Flask · NLTK · Hugging Face Transformers · Deployed on Cloud</p>
+  </footer>
+
+  <script src="/static/js/demo.js"></script>
+</body>
+</html>

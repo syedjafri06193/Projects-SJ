@@ -1,0 +1,5 @@
+flask>=3.0
+nltk>=3.8
+transformers>=4.40
+torch>=2.2          # CPU-only is fine; install torch+cpu wheel on cloud
+gunicorn>=21.2      # production WSGI server

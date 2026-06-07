@@ -1,0 +1,6 @@
+# DPO Configuration
+# Copy this file to .dpo.yml in your project root or ~/.dpo/config.yml
+
+apiUrl: http://localhost:3001/api
+# apiKey: your-api-key-here
+defaultEnvironment: staging

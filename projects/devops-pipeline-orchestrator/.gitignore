@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-server/
+.next/
+out/
+build/
+
+# Environment
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# DPO config
+.dpo.yml
+.dpo.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker
+.dockerignore

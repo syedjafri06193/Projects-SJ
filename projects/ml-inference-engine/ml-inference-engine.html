@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Inference Engine — WASM Neural Runtime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e2530;
+    --green: #00e87a;
+    --green-dim: #00b85f;
+    --green-glow: rgba(0,232,122,0.15);
+    --text: #e8edf2;
+    --text-muted: #5c6b7a;
+    --text-dim: #8a9aaa;
+    --accent: #00e87a;
+    --rust: #f74c00;
+    --wasm: #6340f5;
+    --onnx: #0092d0;
+    --webgpu: #e8a000;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── SCANLINE overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.04) 2px,
+      rgba(0,0,0,0.04) 4px
+    );
+    pointer-events: none;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 48px;
+    background: rgba(10,12,15,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  .nav-links {
+    display: flex; gap: 32px; list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--green); }
+
+  .nav-cta {
+    padding: 8px 20px;
+    border: 1px solid var(--green);
+    color: var(--green);
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .nav-cta:hover {
+    background: var(--green);
+    color: #000;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 120px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 64px 64px;
+    opacity: 0.4;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,232,122,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.7; }
+  }
+
+  .hero-content { position: relative; max-width: 900px; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    animation: blink 1.8s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(48px, 8vw, 96px);
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 8px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .hero h1 span { color: var(--green); }
+
+  .hero-sub {
+    font-family: var(--display);
+    font-size: clamp(20px, 3vw, 32px);
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-desc {
+    font-size: 15px;
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .hero-actions {
+    display: flex; gap: 16px; align-items: center;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 28px;
+    background: var(--green);
+    color: #000;
+    text-decoration: none;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,232,122,0.3);
+  }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 28px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: var(--surface);
+  }
+
+  .stat {
+    padding: 32px 48px;
+    border-right: 1px solid var(--border);
+  }
+
+  .stat:last-child { border-right: none; }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* ── SECTION ── */
+  section { padding: 100px 48px; }
+
+  .section-tag {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .section-tag::after {
+    content: '';
+    flex: 1; max-width: 48px;
+    height: 1px; background: var(--green-dim);
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .section-desc {
+    color: var(--text-dim);
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 64px;
+  }
+
+  /* ── ARCHITECTURE ── */
+  .arch-section { background: var(--surface); }
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .arch-cell {
+    background: var(--surface2);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .arch-cell:hover { background: #1d2330; }
+
+  .arch-cell::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .arch-cell:hover::before { transform: scaleX(1); }
+
+  .arch-number {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .arch-icon {
+    font-size: 28px;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .arch-title {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .arch-desc {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+
+  .arch-tag {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 4px 10px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* ── TECH STACK ── */
+  .tech-section { position: relative; }
+
+  .tech-pills {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 64px;
+  }
+
+  .tech-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    transition: border-color 0.2s, transform 0.15s;
+    cursor: default;
+  }
+
+  .tech-pill:hover {
+    transform: translateY(-3px);
+  }
+
+  .tech-pill.rust { border-color: var(--rust); color: var(--rust); }
+  .tech-pill.wasm { border-color: var(--wasm); color: var(--wasm); }
+  .tech-pill.onnx { border-color: var(--onnx); color: var(--onnx); }
+  .tech-pill.webgpu { border-color: var(--webgpu); color: var(--webgpu); }
+
+  .tech-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  .rust .tech-dot { background: var(--rust); }
+  .wasm .tech-dot { background: var(--wasm); }
+  .onnx .tech-dot { background: var(--onnx); }
+  .webgpu .tech-dot { background: var(--webgpu); }
+
+  /* ── CODE BLOCK ── */
+  .code-window {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .code-titlebar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .code-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+
+  .code-dot.red { background: #ff5f56; }
+  .code-dot.yellow { background: #ffbd2e; }
+  .code-dot.green { background: #27c93f; }
+
+  .code-filename {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .code-body {
+    padding: 28px 32px;
+    overflow-x: auto;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 2;
+    color: var(--text-dim);
+    white-space: pre;
+  }
+
+  .kw { color: var(--wasm); }
+  .fn-name { color: var(--green); }
+  .str { color: var(--webgpu); }
+  .cm { color: #3d5060; }
+  .ty { color: #e06c75; }
+  .num { color: var(--rust); }
+
+  /* ── BENCHMARKS ── */
+  .bench-section { background: var(--surface); }
+
+  .bench-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .bench-card {
+    background: var(--bg);
+    padding: 40px 32px;
+    text-align: center;
+  }
+
+  .bench-model {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 20px;
+  }
+
+  .bench-bar-wrap {
+    height: 4px; background: var(--border); margin-bottom: 20px; position: relative;
+  }
+
+  .bench-bar {
+    height: 100%; background: var(--green);
+    transition: width 1.4s cubic-bezier(.22,1,.36,1);
+  }
+
+  .bench-ms {
+    font-family: var(--display);
+    font-size: 40px; font-weight: 800;
+    color: var(--green); line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .bench-unit {
+    font-size: 12px; color: var(--text-muted); letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .bench-note {
+    font-size: 12px; color: var(--text-dim); margin-top: 12px;
+  }
+
+  /* ── INSTALL ── */
+  .install-section { }
+
+  .install-tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+
+  .tab-btn {
+    padding: 12px 24px;
+    background: none; border: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .tab-btn.active {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── FEATURES ── */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .feature-card {
+    background: var(--bg);
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::after {
+    content: attr(data-num);
+    position: absolute;
+    right: 24px; bottom: 24px;
+    font-family: var(--display);
+    font-size: 64px;
+    font-weight: 800;
+    color: var(--border);
+    line-height: 1;
+  }
+
+  .feature-icon {
+    font-size: 24px; margin-bottom: 20px; display: block;
+  }
+
+  .feature-title {
+    font-family: var(--display);
+    font-size: 18px; font-weight: 700;
+    color: var(--text); margin-bottom: 10px;
+  }
+
+  .feature-desc {
+    font-size: 13px; color: var(--text-dim); line-height: 1.8;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface);
+  }
+
+  .footer-logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: var(--green);
+  }
+
+  .footer-links {
+    display: flex; gap: 24px; list-style: none;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--green); }
+
+  .footer-copy {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── TERMINAL DEMO ── */
+  .terminal {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 2;
+    overflow: hidden;
+  }
+
+  .terminal-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .terminal-title {
+    font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em;
+    margin-left: 8px;
+  }
+
+  .terminal-body { padding: 24px 28px; }
+
+  .t-prompt { color: var(--green); }
+  .t-cmd { color: var(--text); }
+  .t-out { color: var(--text-dim); }
+  .t-success { color: var(--green); }
+  .t-warn { color: var(--webgpu); }
+  .t-cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--green);
+    vertical-align: middle;
+    animation: cursor-blink 1s step-end infinite;
+  }
+
+  @keyframes cursor-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .hero { padding: 100px 24px 60px; }
+    section { padding: 60px 24px; }
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+    .stat { padding: 24px; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .bench-grid { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    footer { flex-direction: column; gap: 20px; text-align: center; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">MLIE</div>
+  <ul class="nav-links">
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#benchmarks">Benchmarks</a></li>
+    <li><a href="#install">Install</a></li>
+    <li><a href="#docs">Docs</a></li>
+  </ul>
+  <a href="https://github.com" class="nav-cta">GitHub ↗</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      Software · Open Source · v0.9.1
+    </div>
+    <h1>ML<br><span>Inference</span><br>Engine</h1>
+    <p class="hero-sub">Zero-dependency neural runtime</p>
+    <p class="hero-desc">
+      Lightweight WASM-compiled neural network runtime that runs quantized models in-browser with zero server dependency. WebGPU acceleration included.
+    </p>
+    <div class="hero-actions">
+      <a href="#install" class="btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Get Started
+      </a>
+      <a href="#docs" class="btn-secondary">
+        Read the Docs →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-value">~2.1<span style="font-size:20px">MB</span></div>
+    <div class="stat-label">WASM bundle size</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">4-<span style="font-size:20px">bit</span></div>
+    <div class="stat-label">Min quantization</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">0</div>
+    <div class="stat-label">Server dependencies</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">ONNX</div>
+    <div class="stat-label">Model format</div>
+  </div>
+</div>
+
+<!-- ARCHITECTURE -->
+<section class="arch-section" id="architecture">
+  <div class="section-tag">Architecture</div>
+  <h2 class="section-title">How it works</h2>
+  <p class="section-desc">A four-layer stack from model loading to tensor execution—entirely inside the browser sandbox.</p>
+
+  <div class="arch-grid">
+    <div class="arch-cell">
+      <div class="arch-number">01 / 04</div>
+      <span class="arch-icon">📦</span>
+      <div class="arch-title">ONNX Model Loader</div>
+      <div class="arch-desc">Parses ONNX protobuf graphs and resolves operator schemas. Supports opset 11–20 with automatic fallback to CPU kernels for unsupported ops.</div>
+      <span class="arch-tag">ONNX · Protobuf</span>
+    </div>
+    <div class="arch-cell">
+      <div class="arch-number">02 / 04</div>
+      <span class="arch-icon">⚡</span>
+      <div class="arch-title">Quantization Engine</div>
+      <div class="arch-desc">INT4/INT8 post-training quantization with symmetric and asymmetric modes. Calibrates per-channel or per-tensor with < 1% accuracy loss on most vision and NLP tasks.</div>
+      <span class="arch-tag">INT4 · INT8 · FP16</span>
+    </div>
+    <div class="arch-cell">
+      <div class="arch-number">03 / 04</div>
+      <span class="arch-icon">🦀</span>
+      <div class="arch-title">Rust WASM Runtime</div>
+      <div class="arch-desc">Compiled from safe Rust to WASM via wasm-pack. SIMD-accelerated tensor ops using WebAssembly SIMD extensions. Zero-copy buffer sharing with JS via SharedArrayBuffer.</div>
+      <span class="arch-tag">Rust · wasm-bindgen</span>
+    </div>
+    <div class="arch-cell">
+      <div class="arch-number">04 / 04</div>
+      <span class="arch-icon">🖥️</span>
+      <div class="arch-title">WebGPU Backend</div>
+      <div class="arch-desc">Falls back gracefully from WebGPU → WebGL2 → WASM CPU. GPU execution pipelines are compiled once and cached. Matrix multiply kernels beat cuBLAS for batch-1 inference.</div>
+      <span class="arch-tag">WebGPU · WGSL</span>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="tech-section" id="stack">
+  <div class="section-tag">Stack</div>
+  <h2 class="section-title">Built with</h2>
+  <p class="section-desc">Chosen for correctness, performance, and browser-native compatibility.</p>
+
+  <div class="tech-pills">
+    <div class="tech-pill rust"><span class="tech-dot"></span> Rust — Core runtime</div>
+    <div class="tech-pill wasm"><span class="tech-dot"></span> WASM — Compilation target</div>
+    <div class="tech-pill onnx"><span class="tech-dot"></span> ONNX — Model format</div>
+    <div class="tech-pill webgpu"><span class="tech-dot"></span> WebGPU — GPU backend</div>
+  </div>
+
+  <!-- Code block -->
+  <div class="code-window">
+    <div class="code-titlebar">
+      <div class="code-dot red"></div>
+      <div class="code-dot yellow"></div>
+      <div class="code-dot green"></div>
+      <span class="code-filename">src/runtime/session.rs</span>
+    </div>
+    <div class="code-body">
+<pre><span class="cm">// Load & run an ONNX model with WebGPU acceleration</span>
+<span class="kw">use</span> mlie::{<span class="ty">Session</span>, <span class="ty">Backend</span>, <span class="ty">QuantMode</span>};
+
+<span class="kw">pub async fn</span> <span class="fn-name">run_inference</span>(model_bytes: &[<span class="ty">u8</span>]) -> <span class="ty">Result</span>&lt;<span class="ty">Tensor</span>&gt; {
+    <span class="kw">let</span> session = <span class="ty">Session</span>::builder()
+        .backend(<span class="ty">Backend</span>::WebGpu)          <span class="cm">// falls back to WASM</span>
+        .quant_mode(<span class="ty">QuantMode</span>::Int8)       <span class="cm">// 4x smaller weights</span>
+        .cache_kernels(<span class="kw">true</span>)               <span class="cm">// compile once</span>
+        .build_from_bytes(model_bytes)<span class="kw">await</span>?;
+
+    <span class="kw">let</span> input = <span class="ty">Tensor</span>::from_slice(
+        &[<span class="num">1.0_f32</span>, <span class="num">0.5</span>, <span class="num">-0.3</span>, <span class="num">0.8</span>],
+        &[<span class="num">1</span>, <span class="num">4</span>]           <span class="cm">// [batch, features]</span>
+    );
+
+    session.<span class="fn-name">run</span>(&[(<span class="str">"input"</span>, &input)])<span class="kw">await</span>
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- BENCHMARKS -->
+<section class="bench-section" id="benchmarks">
+  <div class="section-tag">Benchmarks</div>
+  <h2 class="section-title">In-browser inference</h2>
+  <p class="section-desc">Measured on MacBook Pro M3 Max, Chrome 124, WebGPU enabled. Cold start excluded.</p>
+
+  <div class="bench-grid">
+    <div class="bench-card">
+      <div class="bench-model">MobileNetV3-Small</div>
+      <div class="bench-bar-wrap"><div class="bench-bar" style="width: 18%" data-w="18"></div></div>
+      <div class="bench-ms">4.1</div>
+      <div class="bench-unit">ms / inference</div>
+      <div class="bench-note">INT8 · WebGPU · 224×224</div>
+    </div>
+    <div class="bench-card">
+      <div class="bench-model">BERT-Tiny (NLP)</div>
+      <div class="bench-bar-wrap"><div class="bench-bar" style="width: 42%" data-w="42"></div></div>
+      <div class="bench-ms">11.7</div>
+      <div class="bench-unit">ms / inference</div>
+      <div class="bench-note">INT4 · WebGPU · seq=128</div>
+    </div>
+    <div class="bench-card">
+      <div class="bench-model">YOLOv8-Nano</div>
+      <div class="bench-bar-wrap"><div class="bench-bar" style="width: 78%" data-w="78"></div></div>
+      <div class="bench-ms">22.4</div>
+      <div class="bench-unit">ms / inference</div>
+      <div class="bench-note">INT8 · WebGPU · 640×640</div>
+    </div>
+  </div>
+
+  <div class="code-window">
+    <div class="code-titlebar">
+      <div class="code-dot red"></div>
+      <div class="code-dot yellow"></div>
+      <div class="code-dot green"></div>
+      <span class="code-filename">bench/run.sh</span>
+    </div>
+    <div class="terminal-body" style="padding:24px 28px;">
+<pre><span class="t-prompt">$ </span><span class="t-cmd">cargo bench --features webgpu 2>&1 | tail -20</span>
+<span class="t-out">
+  running 9 tests
+  test mobilenet_v3_small_int8   ... bench: 4,108 ns/iter (+/- 22)
+  test mobilenet_v3_small_fp32   ... bench: 13,445 ns/iter (+/- 84)
+  test bert_tiny_int4            ... bench: 11,691 ns/iter (+/- 41)
+  test bert_tiny_int8            ... bench: 18,203 ns/iter (+/- 67)
+  test yolov8_nano_int8          ... bench: 22,381 ns/iter (+/- 103)
+  test resnet50_int8             ... bench: 38,901 ns/iter (+/- 210)
+  test whisper_tiny_int4         ... bench: 61,504 ns/iter (+/- 390)
+</span>
+<span class="t-success">  All benchmarks passed.</span>
+<span class="t-warn">  WebGPU backend: 3.2x faster than WASM fallback (median)</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section id="install">
+  <div class="section-tag">Install</div>
+  <h2 class="section-title">Get started in minutes</h2>
+  <p class="section-desc">Three ways to use MLIE — choose the one that fits your workflow.</p>
+
+  <div class="install-tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'npm')">npm</button>
+    <button class="tab-btn" onclick="switchTab(this,'cargo')">Cargo</button>
+    <button class="tab-btn" onclick="switchTab(this,'cdn')">CDN</button>
+  </div>
+
+  <div id="tab-npm" class="tab-content active">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="code-dot red"></div>
+        <div class="code-dot yellow"></div>
+        <div class="code-dot green"></div>
+        <span class="terminal-title">Terminal</span>
+      </div>
+      <div class="terminal-body">
+<pre><span class="t-prompt">$ </span><span class="t-cmd">npm install @mlie/core</span>
+<span class="t-out">added 1 package in 0.4s</span>
+
+<span class="t-prompt">$ </span><span class="t-cmd">cat > inference.mjs &lt;&lt;'EOF'</span>
+<span class="t-out">import { Session } from "@mlie/core";
+
+const session = await Session.fromURL("./model.onnx");
+const result  = await session.run({ input: Float32Array.from([...]) });
+console.log(result.output);
+EOF</span>
+
+<span class="t-prompt">$ </span><span class="t-cmd">node --experimental-wasm-modules inference.mjs</span>
+<span class="t-success">✓ WebGPU backend initialized</span>
+<span class="t-success">✓ Model loaded in 34ms</span>
+<span class="t-out">Float32Array [0.92, 0.05, 0.03]</span>
+<span class="t-prompt">$ </span><span class="t-cursor"></span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-cargo" class="tab-content">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="code-dot red"></div>
+        <div class="code-dot yellow"></div>
+        <div class="code-dot green"></div>
+        <span class="terminal-title">Cargo.toml</span>
+      </div>
+      <div class="terminal-body">
+<pre><span class="t-out">[dependencies]</span>
+<span class="t-cmd">mlie = { version = "0.9", features = ["webgpu", "onnx"] }</span>
+
+<span class="t-prompt">$ </span><span class="t-cmd">wasm-pack build --target web</span>
+<span class="t-out">[INFO]: Checking for wasm-bindgen...</span>
+<span class="t-out">[INFO]: Compiling to WASM...</span>
+<span class="t-out">[INFO]: Running wasm-opt with -O2...</span>
+<span class="t-success">✓ Done in 4.2s → pkg/ (2.1MB)</span>
+<span class="t-prompt">$ </span><span class="t-cursor"></span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-cdn" class="tab-content">
+    <div class="code-window">
+      <div class="code-titlebar">
+        <div class="code-dot red"></div>
+        <div class="code-dot yellow"></div>
+        <div class="code-dot green"></div>
+        <span class="code-filename">index.html</span>
+      </div>
+      <div class="code-body">
+<pre><span class="kw">&lt;script</span> <span class="fn-name">type</span>=<span class="str">"module"</span><span class="kw">&gt;</span>
+  <span class="kw">import</span> { <span class="ty">Session</span> } <span class="kw">from</span>
+    <span class="str">"https://cdn.mlie.dev/v0.9.1/core.esm.min.js"</span>;
+
+  <span class="kw">const</span> session = <span class="kw">await</span> <span class="ty">Session</span>.<span class="fn-name">fromURL</span>(<span class="str">"/model.onnx"</span>);
+  <span class="kw">const</span> { output } = <span class="kw">await</span> session.<span class="fn-name">run</span>({ input: data });
+  console.<span class="fn-name">log</span>(output);
+<span class="kw">&lt;/script&gt;</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="background: var(--surface);">
+  <div class="section-tag">Features</div>
+  <h2 class="section-title">Everything you need</h2>
+  <p class="section-desc">Built from the ground up for the browser — no Node.js, no backend, no concessions.</p>
+
+  <div class="features-grid">
+    <div class="feature-card" data-num="01">
+      <span class="feature-icon">🔒</span>
+      <div class="feature-title">Privacy-first</div>
+      <div class="feature-desc">All inference happens on-device. User data never leaves the browser. No telemetry, no cloud calls.</div>
+    </div>
+    <div class="feature-card" data-num="02">
+      <span class="feature-icon">🎯</span>
+      <div class="feature-title">Quantization-aware</div>
+      <div class="feature-desc">INT4 and INT8 quantization baked in. Shrink a 50MB model to 12MB with minimal accuracy trade-off.</div>
+    </div>
+    <div class="feature-card" data-num="03">
+      <span class="feature-icon">🚀</span>
+      <div class="feature-title">WebGPU Accelerated</div>
+      <div class="feature-desc">Custom WGSL compute shaders for matrix multiply and conv ops. Automatic fallback to WebGL2 or WASM.</div>
+    </div>
+    <div class="feature-card" data-num="04">
+      <span class="feature-icon">🔄</span>
+      <div class="feature-title">Streaming inference</div>
+      <div class="feature-desc">Async generator API for token-by-token output. Ideal for language models and real-time use cases.</div>
+    </div>
+    <div class="feature-card" data-num="05">
+      <span class="feature-icon">🧩</span>
+      <div class="feature-title">ONNX native</div>
+      <div class="feature-desc">Supports ONNX opset 11–20. Export from PyTorch, Keras, or Hugging Face and run without conversion.</div>
+    </div>
+    <div class="feature-card" data-num="06">
+      <span class="feature-icon">⚙️</span>
+      <div class="feature-title">Embeddable</div>
+      <div class="feature-desc">Works in Service Workers, Web Workers, and Electron. Designed for offline-first progressive web apps.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">MLIE v0.9.1</div>
+  <ul class="footer-links">
+    <li><a href="#">GitHub</a></li>
+    <li><a href="#">Docs</a></li>
+    <li><a href="#">Changelog</a></li>
+    <li><a href="#">Discord</a></li>
+    <li><a href="#">MIT License</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 MLIE Contributors</div>
+</footer>
+
+<script>
+  function switchTab(btn, id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+
+  // Animate bench bars on scroll
+  const bars = document.querySelectorAll('.bench-bar');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const w = e.target.getAttribute('data-w');
+        e.target.style.width = w + '%';
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  bars.forEach(b => { b.style.width = '0'; io.observe(b); });
+</script>
+</body>
+</html>

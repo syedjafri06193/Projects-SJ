@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  # ─── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ─── API + Dashboard ────────────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+      - PORT=3001
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/dashboard/.next
+
+  # ─── Example target service ──────────────────────────────────────────────────
+  demo-api:
+    image: nginx:alpine
+    ports:
+      - '8080:80'
+    labels:
+      - 'dpo.service=demo-api'
+      - 'dpo.environment=development'
+
+volumes:
+  redis_data:

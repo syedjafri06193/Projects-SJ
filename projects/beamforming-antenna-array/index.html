@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beamforming Antenna Array Simulator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #050810;
+    --panel: #0a0f1e;
+    --border: #1a2540;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #00ff88;
+    --text: #c8d8f0;
+    --muted: #4a6080;
+    --glow: rgba(0,212,255,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .header {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--panel);
+  }
+
+  .header-logo {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent3);
+    animation: pulse 2s infinite;
+    margin-left: auto;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; box-shadow: 0 0 6px var(--accent3); }
+    50% { opacity: 0.4; box-shadow: none; }
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    gap: 0;
+    height: calc(100vh - 49px);
+  }
+
+  .panel {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .panel-right {
+    border-right: none;
+    border-left: 1px solid var(--border);
+  }
+
+  .section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section { margin-bottom: 20px; }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .control-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    min-width: 72px;
+    text-transform: uppercase;
+  }
+
+  .control-value {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: 'Share Tech Mono', monospace;
+    min-width: 48px;
+    text-align: right;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  input[type=range]::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--pct,50%), var(--border) var(--pct,50%));
+    height: 2px;
+    border-radius: 2px;
+  }
+
+  .antenna-grid { display: grid; gap: 6px; }
+
+  .antenna-item {
+    background: rgba(0,212,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+
+  .antenna-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .antenna-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); }
+  .antenna-num { font-size: 10px; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+  .antenna-phase { font-size: 11px; color: var(--accent); font-family: 'Share Tech Mono', monospace; margin-left: auto; }
+  .mini-range { width: 100%; margin-top: 2px; }
+
+  .center-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .viz-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px;
+    align-self: flex-start;
+  }
+
+  .viz-tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    padding: 4px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .viz-tab.active { background: var(--accent); color: var(--bg); }
+
+  canvas { border-radius: 6px; }
+
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .metric-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px;
+  }
+
+  .metric-label { font-size: 8px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .metric-value { font-family: 'Share Tech Mono', monospace; font-size: 16px; color: var(--accent); }
+  .metric-unit { font-size: 9px; color: var(--muted); }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    margin-bottom: 6px;
+  }
+
+  .btn:hover { background: var(--glow); }
+  .btn.danger { border-color: var(--accent2); color: var(--accent2); }
+  .btn.success { border-color: var(--accent3); color: var(--accent3); }
+
+  .eq-container {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 8px;
+    line-height: 2;
+  }
+
+  .scrollbar::-webkit-scrollbar { width: 3px; }
+  .scrollbar::-webkit-scrollbar-track { background: var(--bg); }
+  .scrollbar::-webkit-scrollbar-thumb { background: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">Beamforming Array Simulator</div>
+    <div class="header-sub">Phased Antenna Array — Electronic Beam Steering</div>
+  </div>
+  <div class="status-dot"></div>
+</div>
+
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="panel scrollbar">
+    <div class="section">
+      <div class="section-title">Array Parameters</div>
+      <div class="control-row">
+        <span class="control-label">Antennas</span>
+        <input type="range" id="numAnt" min="2" max="16" value="8" step="1">
+        <span class="control-value" id="numAntVal">8</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Spacing (λ)</span>
+        <input type="range" id="spacing" min="0.1" max="1.5" value="0.5" step="0.05">
+        <span class="control-value" id="spacingVal">0.50</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Frequency</span>
+        <input type="range" id="freq" min="1" max="60" value="28" step="1">
+        <span class="control-value" id="freqVal">28 GHz</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Beam Steering</div>
+      <div class="control-row">
+        <span class="control-label">Steer θ</span>
+        <input type="range" id="steerAngle" min="-90" max="90" value="30" step="1">
+        <span class="control-value" id="steerVal">30°</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Taper</span>
+        <input type="range" id="taper" min="0" max="1" value="0" step="0.05">
+        <span class="control-value" id="taperVal">OFF</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Null Steer</span>
+        <input type="range" id="nullAngle" min="-90" max="90" value="60" step="1">
+        <span class="control-value" id="nullVal">60°</span>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn success" id="applySteer">▶ Apply Beam Steering</button>
+        <button class="btn" id="scanBtn">⟳ Auto Scan Mode</button>
+        <button class="btn danger" id="resetBtn">↺ Reset Phases</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Antenna Elements</div>
+      <div class="antenna-grid" id="antennaList"></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center-area">
+    <div class="viz-tabs">
+      <button class="viz-tab active" onclick="switchTab('polar')">Radiation Pattern</button>
+      <button class="viz-tab" onclick="switchTab('wave')">Wave Interference</button>
+      <button class="viz-tab" onclick="switchTab('array')">Array View</button>
+    </div>
+    <canvas id="mainCanvas" width="580" height="440"></canvas>
+    <div class="metric-grid" style="width:580px">
+      <div class="metric-card">
+        <div class="metric-label">Main Lobe Gain</div>
+        <div class="metric-value" id="gainVal">—<span class="metric-unit"> dB</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Beam Width (3dB)</div>
+        <div class="metric-value" id="bwVal">—<span class="metric-unit"> °</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Side Lobe Level</div>
+        <div class="metric-value" id="sllVal">—<span class="metric-unit"> dB</span></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Steering Angle</div>
+        <div class="metric-value" id="steerDisp">—<span class="metric-unit"> °</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel panel-right scrollbar">
+    <div class="section">
+      <div class="section-title">Array Factor</div>
+      <div class="eq-container">
+        AF(&theta;) = &Sigma;<sub>n=0</sub><sup>N-1</sup> e<sup>j(nkd&middot;sin&theta; + &phi;<sub>n</sub>)</sup>
+      </div>
+      <div style="font-size:9px;color:var(--muted);line-height:1.8;">
+        <span style="color:var(--accent)">N</span> = antenna elements<br>
+        <span style="color:var(--accent)">d</span> = element spacing<br>
+        <span style="color:var(--accent)">k</span> = 2&pi;/&lambda; wavenumber<br>
+        <span style="color:var(--accent)">&phi;&sub;n;</span> = phase offset per element
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Phase Steering</div>
+      <div class="eq-container">
+        &Delta;&phi; = 2&pi;d&middot;sin(&theta;) / &lambda;
+      </div>
+      <div style="font-size:9px;color:var(--muted);line-height:1.8;">
+        Progressive phase shift steers beam to angle &theta;. Each element delayed by &Delta;&phi; relative to previous.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Live Phase Map</div>
+      <canvas id="phaseCanvas" width="228" height="100"></canvas>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Algorithm Mode</div>
+      <div id="algoInfo" style="font-size:9px;color:var(--muted);line-height:1.8;">
+        <span style="color:var(--accent3)">&#9679; Fixed Beamforming</span><br>
+        Steering: computed via &Delta;&phi; = 2&pi;d&middot;sin&theta;/&lambda;<br>
+        Applied uniformly across all N elements.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Taper Window</div>
+      <canvas id="taperCanvas" width="228" height="70"></canvas>
+      <div style="font-size:9px;color:var(--muted);margin-top:6px;">
+        Hamming window applied to reduce side-lobe level at cost of beam width.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">System Status</div>
+      <div id="statusLog" style="font-size:9px;color:var(--muted);line-height:1.9;font-family:'Share Tech Mono',monospace;"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let N = 8, d = 0.5, freq = 28, steerAngle = 30, taperAmt = 0, nullAngle = 60;
+let phases = new Array(16).fill(0);
+let currentTab = 'polar';
+let scanning = false, scanDir = 1, scanAngle = -60;
+let scanInterval = null;
+
+const mainCanvas = document.getElementById('mainCanvas');
+const mctx = mainCanvas.getContext('2d');
+const phaseCanvas = document.getElementById('phaseCanvas');
+const pctx = phaseCanvas.getContext('2d');
+const taperCanvas = document.getElementById('taperCanvas');
+const tctx = taperCanvas.getContext('2d');
+
+function computeAF(theta_deg) {
+  const theta = theta_deg * Math.PI / 180;
+  const k = 2 * Math.PI;
+  let re = 0, im = 0;
+  for (let n = 0; n < N; n++) {
+    const w = getWeight(n);
+    const psi = n * k * d * Math.sin(theta) + phases[n] * Math.PI / 180;
+    re += w * Math.cos(psi);
+    im += w * Math.sin(psi);
+  }
+  return Math.sqrt(re*re + im*im);
+}
+
+function getWeight(n) {
+  if (taperAmt === 0) return 1.0;
+  const alpha = 0.54;
+  const hamming = alpha - (1-alpha) * Math.cos(2*Math.PI*n/(N-1));
+  return (1 - taperAmt) + hamming * taperAmt;
+}
+
+function computePhases() {
+  const k = 2 * Math.PI;
+  const theta = steerAngle * Math.PI / 180;
+  const dPhi = k * d * Math.sin(theta);
+  for (let n = 0; n < N; n++) {
+    phases[n] = (n * dPhi * 180 / Math.PI) % 360;
+    if (phases[n] > 180) phases[n] -= 360;
+  }
+}
+
+function drawPolar() {
+  const W = mainCanvas.width, H = mainCanvas.height;
+  mctx.clearRect(0, 0, W, H);
+  const cx = W/2, cy = H/2 + 20;
+  const R = Math.min(W,H)/2 - 60;
+
+  mctx.strokeStyle = '#1a2540';
+  mctx.lineWidth = 0.5;
+  for (let r = 1; r <= 4; r++) {
+    mctx.beginPath();
+    mctx.arc(cx, cy, r*R/4, 0, Math.PI*2);
+    mctx.stroke();
+    mctx.fillStyle = '#3a5070';
+    mctx.font = '9px IBM Plex Mono';
+    mctx.fillText(`${-Math.round((4-r)*6)} dB`, cx+4, cy - r*R/4 - 3);
+  }
+  for (let a = 0; a < 360; a += 30) {
+    const rad = a * Math.PI / 180;
+    mctx.beginPath();
+    mctx.moveTo(cx, cy);
+    mctx.lineTo(cx + R*Math.sin(rad), cy - R*Math.cos(rad));
+    mctx.stroke();
+  }
+
+  mctx.fillStyle = '#4a6080';
+  mctx.font = '9px IBM Plex Mono';
+  mctx.textAlign = 'center';
+  [-90,-60,-30,0,30,60,90].forEach(a => {
+    const rad = a * Math.PI / 180;
+    mctx.fillText(a+'°', cx + (R+18)*Math.sin(rad), cy - (R+10)*Math.cos(rad) + 4);
+  });
+
+  const pts = [];
+  let maxAF = 0;
+  for (let a = -180; a <= 180; a += 0.5) {
+    const af = computeAF(a);
+    pts.push({ a, af });
+    maxAF = Math.max(maxAF, af);
+  }
+
+  mctx.beginPath();
+  let first = true;
+  pts.forEach(({ a, af }) => {
+    const norm = Math.max(0, af / maxAF);
+    const dB_norm = norm === 0 ? 0 : Math.max(0, 1 + Math.log10(norm*norm) / 3);
+    const r = dB_norm * R;
+    const rad = a * Math.PI / 180;
+    const x = cx + r * Math.sin(rad);
+    const y = cy - r * Math.cos(rad);
+    if (first) { mctx.moveTo(x,y); first = false; } else mctx.lineTo(x,y);
+  });
+  mctx.closePath();
+
+  const grad = mctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  grad.addColorStop(0, 'rgba(0,212,255,0.4)');
+  grad.addColorStop(1, 'rgba(0,212,255,0.05)');
+  mctx.fillStyle = grad;
+  mctx.fill();
+  mctx.strokeStyle = '#00d4ff';
+  mctx.lineWidth = 1.5;
+  mctx.stroke();
+
+  const nullRad = nullAngle * Math.PI / 180;
+  mctx.beginPath();
+  mctx.moveTo(cx, cy);
+  mctx.lineTo(cx + R*0.95*Math.sin(nullRad), cy - R*0.95*Math.cos(nullRad));
+  mctx.strokeStyle = 'rgba(255,107,53,0.4)';
+  mctx.lineWidth = 1;
+  mctx.setLineDash([4,4]);
+  mctx.stroke();
+  mctx.setLineDash([]);
+
+  const sRad = steerAngle * Math.PI / 180;
+  const xEnd = cx + (R+5)*Math.sin(sRad);
+  const yEnd = cy - (R+5)*Math.cos(sRad);
+  mctx.beginPath();
+  mctx.moveTo(cx, cy);
+  mctx.lineTo(xEnd, yEnd);
+  mctx.strokeStyle = 'rgba(0,255,136,0.6)';
+  mctx.lineWidth = 1.5;
+  mctx.stroke();
+  const angle = Math.atan2(yEnd-cy, xEnd-cx);
+  mctx.beginPath();
+  mctx.moveTo(xEnd, yEnd);
+  mctx.lineTo(xEnd - 10*Math.cos(angle-0.35), yEnd - 10*Math.sin(angle-0.35));
+  mctx.lineTo(xEnd - 10*Math.cos(angle+0.35), yEnd - 10*Math.sin(angle+0.35));
+  mctx.closePath();
+  mctx.fillStyle = 'rgba(0,255,136,0.6)';
+  mctx.fill();
+
+  mctx.textAlign = 'left';
+  mctx.fillStyle = '#4a6080';
+  mctx.font = '9px IBM Plex Mono';
+  mctx.fillText(`N=${N}  d=${d}λ  f=${freq}GHz`, 12, 16);
+
+  updateMetrics(pts, maxAF);
+}
+
+function updateMetrics(pts, maxAF) {
+  const gain = 20*Math.log10(maxAF);
+  document.getElementById('gainVal').innerHTML = gain.toFixed(1) + '<span class="metric-unit"> dB</span>';
+  const halfPow = maxAF / Math.sqrt(2);
+  let crossings = [];
+  for (let i = 1; i < pts.length; i++) {
+    if ((pts[i-1].af < halfPow) !== (pts[i].af < halfPow)) crossings.push(pts[i].a);
+  }
+  const bw = crossings.length >= 2 ? Math.abs(crossings[1]-crossings[0]).toFixed(1) : '—';
+  document.getElementById('bwVal').innerHTML = bw + '<span class="metric-unit"> °</span>';
+  const sideLobes = pts.filter(p => Math.abs(p.a - steerAngle) >= 20);
+  const maxSide = sideLobes.length ? Math.max(...sideLobes.map(p=>p.af)) : 0;
+  const sll = maxSide > 0 ? (20*Math.log10(maxSide/maxAF)).toFixed(1) : '—';
+  document.getElementById('sllVal').innerHTML = sll + '<span class="metric-unit"> dB</span>';
+  document.getElementById('steerDisp').innerHTML = steerAngle + '<span class="metric-unit"> °</span>';
+}
+
+function drawWaveInterference() {
+  const W = mainCanvas.width, H = mainCanvas.height;
+  const imageData = mctx.createImageData(W, H);
+  const data = imageData.data;
+  const k = 2 * Math.PI;
+  const antY = H * 0.75;
+  const antXStart = W * 0.15;
+  const antSpacing = (W * 0.7) / Math.max(N-1, 1);
+
+  for (let px = 0; px < W; px++) {
+    for (let py = 0; py < H; py++) {
+      let re = 0, im = 0;
+      for (let n = 0; n < N; n++) {
+        const ax = antXStart + n * antSpacing;
+        const dist = Math.sqrt((px-ax)**2 + (py-antY)**2);
+        const psi = k * dist * 0.04 + phases[n] * Math.PI / 180;
+        const w = getWeight(n);
+        re += w * Math.cos(psi) / (dist * 0.02 + 1);
+        im += w * Math.sin(psi) / (dist * 0.02 + 1);
+      }
+      const amp = Math.sqrt(re*re + im*im);
+      const norm = Math.min(1, amp / (N * 0.5));
+      const idx = (py*W + px) * 4;
+      if (norm < 0.5) {
+        data[idx]   = Math.round(norm * 2 * 10);
+        data[idx+1] = Math.round(norm * 2 * 150);
+        data[idx+2] = Math.round(norm * 2 * 180);
+      } else {
+        const t = (norm - 0.5) * 2;
+        data[idx]   = Math.round(10 + t * 245);
+        data[idx+1] = Math.round(150 + t * 105);
+        data[idx+2] = Math.round(180 + t * 75);
+      }
+      data[idx+3] = 255;
+    }
+  }
+  mctx.putImageData(imageData, 0, 0);
+
+  for (let n = 0; n < N; n++) {
+    const ax = antXStart + n * antSpacing;
+    mctx.beginPath();
+    mctx.arc(ax, antY, 5, 0, Math.PI*2);
+    mctx.fillStyle = '#ff6b35';
+    mctx.fill();
+    mctx.strokeStyle = '#ffffff';
+    mctx.lineWidth = 1;
+    mctx.stroke();
+    mctx.fillStyle = '#00d4ff';
+    mctx.font = '8px IBM Plex Mono';
+    mctx.textAlign = 'center';
+    mctx.fillText(`${phases[n].toFixed(0)}°`, ax, antY + 18);
+  }
+
+  mctx.fillStyle = 'rgba(0,0,0,0.6)';
+  mctx.fillRect(0, 0, W, 22);
+  mctx.fillStyle = '#4a6080';
+  mctx.font = '9px IBM Plex Mono';
+  mctx.textAlign = 'left';
+  mctx.fillText('Wave interference field — constructive (bright) / destructive (dark)', 12, 14);
+}
+
+function drawArrayView() {
+  const W = mainCanvas.width, H = mainCanvas.height;
+  mctx.clearRect(0, 0, W, H);
+  const lineY = H * 0.5 + 40;
+  const startX = 60, endX = W - 60;
+  const antSpacing = (endX - startX) / Math.max(N-1, 1);
+
+  mctx.strokeStyle = '#1a2540';
+  mctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 20) {
+    mctx.beginPath();
+    mctx.moveTo(x, lineY+20);
+    mctx.lineTo(x+10, lineY+30);
+    mctx.stroke();
+  }
+  mctx.strokeStyle = '#2a3550';
+  mctx.lineWidth = 2;
+  mctx.beginPath();
+  mctx.moveTo(0, lineY+20);
+  mctx.lineTo(W, lineY+20);
+  mctx.stroke();
+  mctx.strokeStyle = '#1a3060';
+  mctx.lineWidth = 2;
+  mctx.beginPath();
+  mctx.moveTo(startX, lineY+5);
+  mctx.lineTo(endX, lineY+5);
+  mctx.stroke();
+  mctx.fillStyle = '#ff6b35';
+  mctx.beginPath();
+  mctx.arc(W/2, lineY+5, 5, 0, Math.PI*2);
+  mctx.fill();
+  mctx.fillStyle = '#4a6080';
+  mctx.font = '8px IBM Plex Mono';
+  mctx.textAlign = 'center';
+  mctx.fillText('Feed', W/2, lineY+25);
+
+  for (let n = 0; n < N; n++) {
+    const ax = startX + n * antSpacing;
+    const phaseNorm = (phases[n] + 180) / 360;
+    const hue = Math.round(phaseNorm * 260);
+    const antColor = `hsl(${hue}, 80%, 60%)`;
+    mctx.strokeStyle = antColor;
+    mctx.lineWidth = 3;
+    mctx.lineCap = 'round';
+    mctx.beginPath();
+    mctx.moveTo(ax, lineY+5);
+    mctx.lineTo(ax, lineY - 80);
+    mctx.stroke();
+    mctx.lineWidth = 1.5;
+    mctx.beginPath();
+    mctx.moveTo(ax - 15, lineY - 80);
+    mctx.lineTo(ax + 15, lineY - 80);
+    mctx.stroke();
+    mctx.fillStyle = '#0a0f1e';
+    mctx.strokeStyle = antColor;
+    mctx.lineWidth = 1;
+    const bw = 28, bh = 16, bx = ax - bw/2, by = lineY - 40;
+    mctx.fillRect(bx, by, bw, bh);
+    mctx.strokeRect(bx, by, bw, bh);
+    mctx.fillStyle = antColor;
+    mctx.font = '7px IBM Plex Mono';
+    mctx.textAlign = 'center';
+    mctx.fillText(`${phases[n].toFixed(0)}°`, ax, by + 11);
+    const w = getWeight(n);
+    mctx.strokeStyle = `rgba(0,212,255,${w*0.3})`;
+    mctx.lineWidth = 1;
+    mctx.setLineDash([2,4]);
+    mctx.beginPath();
+    mctx.arc(ax, lineY - 80, 24 + w*10, Math.PI/4, Math.PI*3/4, true);
+    mctx.stroke();
+    mctx.setLineDash([]);
+    mctx.fillStyle = '#4a6080';
+    mctx.font = '8px IBM Plex Mono';
+    mctx.textAlign = 'center';
+    mctx.fillText(`E${n+1}`, ax, lineY + 38);
+  }
+
+  mctx.textAlign = 'left';
+  mctx.fillStyle = '#4a6080';
+  mctx.font = '9px IBM Plex Mono';
+  mctx.fillText(`Linear Array — ${N} elements, d=${d}λ spacing, f=${freq}GHz`, 12, 16);
+
+  const steerRad = steerAngle * Math.PI / 180;
+  const arcCX = W/2, arcCY = lineY - 80;
+  mctx.strokeStyle = 'rgba(0,255,136,0.5)';
+  mctx.lineWidth = 1.5;
+  mctx.setLineDash([4,4]);
+  mctx.beginPath();
+  mctx.moveTo(arcCX, arcCY);
+  const bLen = 120;
+  mctx.lineTo(arcCX + bLen*Math.sin(steerRad), arcCY - bLen*Math.cos(steerRad));
+  mctx.stroke();
+  mctx.setLineDash([]);
+  mctx.fillStyle = 'rgba(0,255,136,0.7)';
+  mctx.font = '9px IBM Plex Mono';
+  mctx.textAlign = 'center';
+  mctx.fillText(`θ = ${steerAngle}°`, arcCX + (bLen+16)*Math.sin(steerRad), arcCY - (bLen+4)*Math.cos(steerRad));
+}
+
+function drawPhaseBars() {
+  const W = phaseCanvas.width, H = phaseCanvas.height;
+  pctx.clearRect(0, 0, W, H);
+  const bw = (W - 16) / N;
+  for (let n = 0; n < N; n++) {
+    const norm = (phases[n] + 180) / 360;
+    const hue = Math.round(norm * 260);
+    pctx.fillStyle = `hsl(${hue}, 80%, 50%)`;
+    const bh = Math.max(2, norm * (H - 16));
+    pctx.fillRect(8 + n*bw + 1, H - 8 - bh, bw - 2, bh);
+  }
+  pctx.fillStyle = '#2a3550';
+  pctx.fillRect(0, H - 8, W, 1);
+  pctx.fillStyle = '#4a6080';
+  pctx.font = '7px IBM Plex Mono';
+  pctx.textAlign = 'left';
+  pctx.fillText('-180°', 8, H - 2);
+  pctx.textAlign = 'right';
+  pctx.fillText('+180°', W - 8, H - 2);
+}
+
+function drawTaperWeights() {
+  const W = taperCanvas.width, H = taperCanvas.height;
+  tctx.clearRect(0, 0, W, H);
+  const bw = (W - 16) / N;
+  for (let n = 0; n < N; n++) {
+    const w = getWeight(n);
+    tctx.fillStyle = '#00d4ff';
+    tctx.globalAlpha = 0.7 + w*0.3;
+    const bh = Math.max(2, w * (H - 16));
+    tctx.fillRect(8 + n*bw + 1, H - 8 - bh, bw - 2, bh);
+  }
+  tctx.globalAlpha = 1;
+}
+
+function renderAntennaList() {
+  const list = document.getElementById('antennaList');
+  list.innerHTML = '';
+  for (let n = 0; n < Math.min(N, 8); n++) {
+    const div = document.createElement('div');
+    div.className = 'antenna-item';
+    div.innerHTML = `
+      <div class="antenna-header">
+        <div class="antenna-dot" style="background:hsl(${Math.round(((phases[n]+180)/360)*260)},80%,60%)"></div>
+        <span class="antenna-num">E${n+1}</span>
+        <span class="antenna-phase">${phases[n].toFixed(1)}°</span>
+      </div>
+      <input type="range" class="mini-range" min="-180" max="180" value="${phases[n].toFixed(0)}"
+        oninput="phases[${n}]=parseFloat(this.value); document.querySelectorAll('.antenna-phase')[${n}].textContent=parseFloat(this.value).toFixed(1)+'°'; redraw()">
+    `;
+    list.appendChild(div);
+  }
+  if (N > 8) {
+    const more = document.createElement('div');
+    more.style.cssText = 'font-size:9px;color:var(--muted);text-align:center;padding:4px';
+    more.textContent = `+ ${N-8} more elements`;
+    list.appendChild(more);
+  }
+}
+
+function updateStatus(msg) {
+  const log = document.getElementById('statusLog');
+  const time = new Date().toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const line = document.createElement('div');
+  line.innerHTML = `<span style="color:var(--accent2)">${time}</span> ${msg}`;
+  log.insertBefore(line, log.firstChild);
+  if (log.children.length > 6) log.removeChild(log.lastChild);
+}
+
+function redraw() {
+  if (currentTab === 'polar') drawPolar();
+  else if (currentTab === 'wave') drawWaveInterference();
+  else drawArrayView();
+  drawPhaseBars();
+  drawTaperWeights();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.viz-tab').forEach((b,i) => {
+    b.classList.toggle('active', ['polar','wave','array'][i] === tab);
+  });
+  redraw();
+}
+
+function updateTrack(el) {
+  const min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
+  el.style.setProperty('--pct', ((val-min)/(max-min)*100).toFixed(1)+'%');
+}
+
+function setupControl(id, valId, fmt, cb) {
+  const el = document.getElementById(id);
+  const vo = document.getElementById(valId);
+  el.addEventListener('input', () => {
+    const v = parseFloat(el.value);
+    vo.textContent = fmt(v);
+    cb(v);
+    updateTrack(el);
+    redraw();
+  });
+  updateTrack(el);
+}
+
+setupControl('numAnt', 'numAntVal', v => Math.round(v), v => { N = Math.round(v); computePhases(); renderAntennaList(); updateStatus(`Array → ${N} elements`); });
+setupControl('spacing', 'spacingVal', v => v.toFixed(2), v => { d = v; computePhases(); updateStatus(`Spacing → ${v.toFixed(2)}λ`); });
+setupControl('freq', 'freqVal', v => `${Math.round(v)} GHz`, v => { freq = Math.round(v); updateStatus(`Frequency → ${Math.round(v)} GHz`); });
+setupControl('steerAngle', 'steerVal', v => `${Math.round(v)}°`, v => { steerAngle = Math.round(v); });
+setupControl('taper', 'taperVal', v => v === 0 ? 'OFF' : `${(v*100).toFixed(0)}%`, v => { taperAmt = v; updateStatus(`Taper → ${v===0?'OFF':((v*100).toFixed(0)+'%')}`); });
+setupControl('nullAngle', 'nullVal', v => `${Math.round(v)}°`, v => { nullAngle = Math.round(v); });
+
+document.getElementById('applySteer').addEventListener('click', () => {
+  computePhases(); renderAntennaList();
+  updateStatus(`Steering applied → θ=${steerAngle}°`); redraw();
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  phases.fill(0); renderAntennaList();
+  updateStatus('Phases reset → uniform 0°'); redraw();
+});
+
+document.getElementById('scanBtn').addEventListener('click', () => {
+  scanning = !scanning;
+  document.getElementById('scanBtn').textContent = scanning ? '⏹ Stop Scan' : '⟳ Auto Scan Mode';
+  if (scanning) {
+    scanAngle = -60;
+    scanInterval = setInterval(() => {
+      scanAngle += scanDir * 0.8;
+      if (scanAngle >= 60 || scanAngle <= -60) scanDir *= -1;
+      steerAngle = Math.round(scanAngle);
+      document.getElementById('steerAngle').value = steerAngle;
+      document.getElementById('steerVal').textContent = steerAngle + '°';
+      updateTrack(document.getElementById('steerAngle'));
+      computePhases(); renderAntennaList(); redraw();
+    }, 40);
+  } else {
+    clearInterval(scanInterval);
+  }
+});
+
+computePhases();
+renderAntennaList();
+redraw();
+updateStatus(`System initialized — ${N}-element array`);
+updateStatus(`f=${freq}GHz  d=${d}λ  θ=${steerAngle}°`);
+document.querySelectorAll('input[type=range]').forEach(updateTrack);
+</script>
+</body>
+</html>

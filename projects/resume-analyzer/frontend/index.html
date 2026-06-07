@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Analyzer — AI + Java Hybrid</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f3; color: #1a1a18; min-height: 100vh;
+    }
+
+    header {
+      background: #fff; border-bottom: 0.5px solid #e0dfd8;
+      padding: 14px 2rem; display: flex; align-items: center; gap: 12px;
+    }
+    header h1 { font-size: 18px; font-weight: 500; }
+    .arch-pills { display: flex; gap: 6px; margin-left: auto; }
+    .pill {
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .pill-java { background: #faeeda; color: #854f0b; }
+    .pill-py   { background: #eaf3de; color: #3b6d11; }
+    .pill-ai   { background: #eeedfe; color: #534ab7; }
+
+    main { max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+
+    .card {
+      background: #fff; border: 0.5px solid #e0dfd8;
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem;
+    }
+    .card-title { font-size: 13px; font-weight: 500; color: #888; margin-bottom: 12px; }
+
+    textarea {
+      width: 100%; min-height: 180px; resize: vertical;
+      border: 0.5px solid #ccc; border-radius: 8px;
+      padding: 12px; font-family: "SF Mono", monospace; font-size: 13px;
+      line-height: 1.6; color: #1a1a18; background: #fafaf8;
+    }
+    textarea:focus { outline: none; border-color: #7f77dd; box-shadow: 0 0 0 3px rgba(127,119,221,0.12); }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    input[type="text"] {
+      width: 100%; padding: 9px 12px; font-size: 13px;
+      border: 0.5px solid #ccc; border-radius: 8px;
+      background: #fafaf8; color: #1a1a18;
+    }
+    input:focus { outline: none; border-color: #7f77dd; box-shadow: 0 0 0 3px rgba(127,119,221,0.12); }
+
+    .btn-primary {
+      width: 100%; margin-top: 1rem; padding: 12px;
+      background: #534ab7; color: #eeedfe; border: none;
+      border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-primary:hover { background: #3c3489; }
+    .btn-primary:disabled { background: #ccc; color: #888; cursor: not-allowed; }
+
+    .log-box {
+      background: #2c2c2a; border-radius: 8px; padding: 12px 14px;
+      font-family: "SF Mono", monospace; font-size: 12px;
+      line-height: 1.9; max-height: 200px; overflow-y: auto;
+      display: none; margin-bottom: 1.25rem;
+    }
+    .log-ok   { color: #5dcaa5; }
+    .log-info { color: #7f77dd; }
+    .log-time { color: #666; margin-right: 8px; }
+
+    #results { display: none; }
+
+    .score-banner {
+      display: flex; align-items: center; gap: 1.5rem;
+      background: #f5f5f3; border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem;
+    }
+    .score-num { font-size: 48px; font-weight: 500; color: #534ab7; line-height: 1; }
+    .score-sub { font-size: 12px; color: #888; margin-top: 2px; }
+    .score-headline { font-size: 18px; font-weight: 500; }
+    .score-desc { font-size: 13px; color: #555; margin-top: 4px; }
+
+    .metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+    .metric { background: #f5f5f3; border-radius: 8px; padding: 12px 14px; }
+    .metric .val { font-size: 22px; font-weight: 500; }
+    .metric .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+
+    .tabs { display: flex; gap: 0; border-bottom: 0.5px solid #e0dfd8; margin-bottom: 1rem; }
+    .tab {
+      padding: 9px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+      color: #888; border: none; background: none;
+      border-bottom: 2px solid transparent; transition: color 0.12s;
+    }
+    .tab.active { color: #534ab7; border-bottom-color: #534ab7; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .skill-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    }
+    .chip-m { background: #eaf3de; color: #3b6d11; }
+    .chip-x { background: #fcebeb; color: #a32d2d; }
+    .chip-b { background: #eeedfe; color: #534ab7; }
+
+    .bar-row { margin-bottom: 10px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 4px; }
+    .bar-track { height: 6px; border-radius: 3px; background: #eee; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+    .suggestion { padding: 10px 0; border-bottom: 0.5px solid #eee; font-size: 13px; display: flex; gap: 10px; line-height: 1.6; }
+    .suggestion:last-child { border: none; }
+    .sug-h { color: #a32d2d; }
+    .sug-m { color: #854f0b; }
+    .sug-l { color: #3b6d11; }
+
+    pre { background: #2c2c2a; color: #b4b2a9; border-radius: 8px; padding: 14px; font-size: 12px; line-height: 1.8; overflow-x: auto; }
+    .c-green { color: #5dcaa5; }
+    .c-purple { color: #7f77dd; }
+    .c-amber { color: #ef9f27; }
+
+    .reset { margin-top: 1rem; font-size: 13px; color: #888; background: none; border: 0.5px solid #ccc; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
+    .reset:hover { background: #f5f5f3; }
+  </style>
+</head>
+<body>
+  <header>
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect width="22" height="22" rx="6" fill="#534ab7"/>
+      <path d="M6 7h10M6 11h7M6 15h4" stroke="#eeedfe" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <h1>Resume Analyzer</h1>
+    <div class="arch-pills">
+      <span class="pill pill-java">☕ Java</span>
+      <span class="pill pill-py">🐍 Python ML</span>
+      <span class="pill pill-ai">✦ Claude AI</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="card-title">RESUME TEXT</div>
+      <textarea id="resumeText" placeholder="Paste your resume here..."></textarea>
+      <div class="row">
+        <input type="text" id="role" placeholder="Target role (e.g. Senior Backend Engineer)">
+        <input type="text" id="company" placeholder="Company (e.g. Google, Stripe)">
+      </div>
+      <button class="btn-primary" id="analyzeBtn" onclick="runAnalysis()">Analyze with AI</button>
+    </div>
+
+    <div class="log-box" id="logBox"></div>
+
+    <div id="results">
+      <div class="card">
+        <div class="score-banner">
+          <div>
+            <div class="score-num" id="scoreNum">—</div>
+            <div class="score-sub">out of 100</div>
+          </div>
+          <div>
+            <div class="score-headline" id="scoreHeadline">—</div>
+            <div class="score-desc" id="scoreDesc"></div>
+          </div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="val" id="m1">—</div><div class="lbl">ATS score</div></div>
+          <div class="metric"><div class="val" id="m2">—</div><div class="lbl">Keyword match</div></div>
+          <div class="metric"><div class="val" id="m3">—</div><div class="lbl">Years exp.</div></div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="tab('skills',this)">Skills</button>
+          <button class="tab" onclick="tab('sections',this)">Section scores</button>
+          <button class="tab" onclick="tab('suggestions',this)">Suggestions</button>
+          <button class="tab" onclick="tab('raw',this)">Raw output</button>
+        </div>
+
+        <div id="tab-skills" class="tab-panel active">
+          <div style="font-size:12px; color:#888; margin-bottom:10px;">
+            <span style="background:#eaf3de; color:#3b6d11; padding:2px 8px; border-radius:10px; font-weight:500;">matched</span>
+            <span style="background:#fcebeb; color:#a32d2d; padding:2px 8px; border-radius:10px; font-weight:500; margin:0 4px;">missing</span>
+            <span style="background:#eeedfe; color:#534ab7; padding:2px 8px; border-radius:10px; font-weight:500;">bonus</span>
+          </div>
+          <div class="skill-chips" id="skillChips"></div>
+        </div>
+
+        <div id="tab-sections" class="tab-panel">
+          <div id="sectionBars"></div>
+        </div>
+
+        <div id="tab-suggestions" class="tab-panel">
+          <div id="suggestionList"></div>
+        </div>
+
+        <div id="tab-raw" class="tab-panel">
+          <pre id="rawOutput"></pre>
+        </div>
+      </div>
+
+      <button class="reset" onclick="reset()">Analyze another</button>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = "http://localhost:8080/api/v1/resume";
+
+    function log(type, msg) {
+      const box = document.getElementById("logBox");
+      const now = new Date();
+      const ts = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+      box.innerHTML += `<div><span class="log-time">${ts}</span><span class="log-${type}">${msg}</span></div>`;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    async function runAnalysis() {
+      const text = document.getElementById("resumeText").value.trim();
+      if (!text) { alert("Please paste a resume first."); return; }
+
+      const btn = document.getElementById("analyzeBtn");
+      btn.disabled = true;
+      btn.textContent = "Analyzing...";
+
+      const logBox = document.getElementById("logBox");
+      logBox.style.display = "block";
+      logBox.innerHTML = "";
+      document.getElementById("results").style.display = "none";
+
+      log("info", "[JavaController] POST /api/v1/resume/analyze");
+      await sleep(200);
+      log("ok",   "[Java] Dispatching to Python ML service :5001");
+      await sleep(300);
+
+      try {
+        const res = await fetch(`${API_BASE}/analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            resumeText: text,
+            targetRole: document.getElementById("role").value || "Software Engineer",
+            targetCompany: document.getElementById("company").value || "a tech company"
+          })
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        log("ok", "[Python] ML features extracted");
+        await sleep(150);
+        log("ok", `[Claude] Analysis complete — score=${data.overall_score}`);
+        await sleep(150);
+        log("ok", "[Java] 200 OK — returning to client");
+
+        render(data);
+      } catch (e) {
+        log("err", `[Error] ${e.message} — is the Java backend running on :8080?`);
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Analyze with AI";
+    }
+
+    function render(r) {
+      document.getElementById("results").style.display = "block";
+      document.getElementById("scoreNum").textContent = r.overall_score;
+      document.getElementById("scoreHeadline").textContent = r.headline;
+      document.getElementById("scoreDesc").textContent = r.subtitle;
+      document.getElementById("m1").textContent = r.ats_score + "%";
+      document.getElementById("m2").textContent = r.keyword_match_pct + "%";
+      document.getElementById("m3").textContent = r.years_experience + " yrs";
+
+      const sc = document.getElementById("skillChips");
+      sc.innerHTML = "";
+      (r.matched_skills||[]).forEach(s => sc.innerHTML += `<span class="chip chip-m">${s}</span>`);
+      (r.missing_skills||[]).forEach(s => sc.innerHTML += `<span class="chip chip-x">${s}</span>`);
+      (r.bonus_skills||[]).forEach(s => sc.innerHTML += `<span class="chip chip-b">${s}</span>`);
+
+      const bars = document.getElementById("sectionBars");
+      bars.innerHTML = "";
+      const colors = ["#534ab7","#1d9e75","#d85a30","#ba7517","#185fa5"];
+      (r.section_scores||[]).forEach((sec,i) => {
+        bars.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label"><span>${sec.label}</span><span>${sec.score}%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:0%;background:${colors[i%colors.length]}" data-w="${sec.score}%"></div></div>
+          </div>`;
+      });
+      setTimeout(() => document.querySelectorAll(".bar-fill").forEach(b => b.style.width = b.dataset.w), 80);
+
+      const sl = document.getElementById("suggestionList");
+      sl.innerHTML = "";
+      (r.suggestions||[]).forEach(s => {
+        const cls = s.priority==="high" ? "sug-h" : s.priority==="med" ? "sug-m" : "sug-l";
+        const icon = s.priority==="high" ? "▲" : s.priority==="med" ? "●" : "▼";
+        sl.innerHTML += `<div class="suggestion"><span class="${cls}" style="font-size:10px;flex-shrink:0;margin-top:2px;">${icon}</span><span>${s.text}</span></div>`;
+      });
+
+      document.getElementById("rawOutput").textContent = JSON.stringify(r, null, 2);
+    }
+
+    function tab(name, el) {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      el.classList.add("active");
+      document.getElementById("tab-" + name).classList.add("active");
+    }
+
+    function reset() {
+      document.getElementById("resumeText").value = "";
+      document.getElementById("logBox").style.display = "none";
+      document.getElementById("results").style.display = "none";
+    }
+  </script>
+</body>
+</html>

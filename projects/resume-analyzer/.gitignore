@@ -1,0 +1,28 @@
+# Secrets — NEVER commit this
+.env
+
+# Java build artifacts
+java-backend/target/
+*.class
+*.jar
+*.war
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerenv

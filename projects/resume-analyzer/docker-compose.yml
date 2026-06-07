@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  python-ml:
+    build: ./python-ml
+    container_name: resume-ml
+    ports:
+      - "5001:5001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  java-backend:
+    build: ./java-backend
+    container_name: resume-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PYTHON_ML_URL=http://python-ml:5001
+    depends_on:
+      python-ml:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: resume-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - java-backend

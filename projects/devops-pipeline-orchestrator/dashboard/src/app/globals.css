@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 95%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 95%;
+    --border: 217 33% 16%;
+    --muted: 217 33% 13%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 72% 51%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 48%;
+    --radius: 0.5rem;
+  }
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* Subtle grid background */
+.bg-grid {
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Status indicators */
+.status-dot {
+  @apply inline-block w-2 h-2 rounded-full;
+}
+.status-dot.running  { @apply bg-green-400; box-shadow: 0 0 6px theme('colors.green.400'); }
+.status-dot.deploying { animation: pulse 1.5s infinite; @apply bg-yellow-400; }
+.status-dot.error    { @apply bg-red-500; }
+.status-dot.stopped  { @apply bg-gray-500; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Glow effects for accents */
+.glow-green {
+  box-shadow: 0 0 20px hsl(142 71% 45% / 0.3);
+}
+
+/* Terminal font */
+.font-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+}

@@ -1,0 +1,50 @@
+/* ===== OratorAI Global Styles ===== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+:root {
+  --bg: #0a0c0f;
+  --bg2: #111418;
+  --bg3: #181d23;
+  --bg4: #1e2530;
+  --border: rgba(255, 255, 255, 0.07);
+  --border2: rgba(255, 255, 255, 0.13);
+  --accent: #00e5a0;
+  --accent2: #0ef;
+  --accent3: #7c6eff;
+  --text: #e8edf5;
+  --text2: #8a9ab5;
+  --text3: #4a5670;
+  --red: #ff4d6a;
+  --amber: #ffb340;
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--sans);
+}
+
+canvas {
+  display: block;
+}

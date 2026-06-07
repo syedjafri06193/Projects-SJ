@@ -1,0 +1,33 @@
+{
+  "name": "devops-pipeline-orchestrator",
+  "version": "1.0.0",
+  "description": "CLI tool and dashboard for managing multi-environment deployments with automated rollback, health checks, and Slack integration",
+  "private": true,
+  "workspaces": [
+    "cli",
+    "dashboard",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=cli\" \"npm run dev --workspace=dashboard\"",
+    "build": "npm run build --workspace=shared && npm run build --workspace=cli && npm run build --workspace=dashboard",
+    "lint": "npm run lint --workspace=cli && npm run lint --workspace=dashboard",
+    "test": "npm run test --workspace=cli",
+    "install:all": "npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "devops",
+    "deployment",
+    "pipeline",
+    "orchestrator",
+    "cli",
+    "dashboard",
+    "docker",
+    "kubernetes"
+  ],
+  "author": "",
+  "license": "MIT"
+}
