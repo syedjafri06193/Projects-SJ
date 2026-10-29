@@ -81,3 +81,32 @@ Each of these has a written design and build guide but no implementation yet:
 | [`ai/`](ai/) | AI-powered job search engine |
 | [`hardware-systems/`](hardware-systems/) | Electromagnetic levitation, induction heating, magnetic position tracking, mini-MRI simulation, wireless communication |
 | [`1—Documentation/`](1—Documentation/README.md) | Portfolio reviews and software specifications for planned finance projects |
+
+<!-- project-metrics:start -->
+## Project Metrics
+
+[![Stars](https://img.shields.io/github/stars/syedjafri06193/Projects-SJ?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ/stargazers) [![Forks](https://img.shields.io/github/forks/syedjafri06193/Projects-SJ?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ/forks) [![Open issues](https://img.shields.io/github/issues/syedjafri06193/Projects-SJ?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ/issues) [![Last commit](https://img.shields.io/github/last-commit/syedjafri06193/Projects-SJ/improvements?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ/commits/improvements) [![Commits](https://img.shields.io/github/commit-activity/t/syedjafri06193/Projects-SJ?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ/commits/improvements) [![Top language](https://img.shields.io/github/languages/top/syedjafri06193/Projects-SJ?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ) [![Repo size](https://img.shields.io/github/repo-size/syedjafri06193/Projects-SJ?style=flat-square)](https://github.com/syedjafri06193/Projects-SJ)
+
+### Code
+
+| Metric | Value |
+|---|---|
+| Lines of code | 9,314 |
+| Source files | 140 |
+| Tracked files | 212 |
+| Documentation | 32 Markdown files (17,917 words), 6 PDF |
+| Commits | 41 |
+| Contributors | 3 |
+| Active | 2026-05-04 → 2026-10-28 |
+
+| Language | Lines | Share |
+|---|---:|---:|
+| Java | 2,124 | 22.8% |
+| HTML+Genshi | 1,349 | 14.5% |
+| Python | 1,227 | 13.2% |
+| HTML | 992 | 10.7% |
+| TypeScript | 940 | 10.1% |
+| JSX | 676 | 7.3% |
+
+<sub>Code stats as of 2026-10-28, counted with pygount (comments and blank lines excluded). Badges update live.</sub>
+<!-- project-metrics:end -->
